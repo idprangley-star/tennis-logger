@@ -301,6 +301,39 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .ls-btn.winner-type.sel { background: #14532d; border-color: var(--green); color: #86efac; }
 .ls-btn.error-type.sel { background: #3d1515; border-color: var(--red); color: #fca5a5; }
 
+/* 2nd last shot buttons */
+.tls-btn {
+  padding: 7px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  background: var(--bg3); color: var(--fg2); border: 2px solid transparent;
+}
+.tls-btn.sel { border-color: var(--purple); color: var(--fg); background: var(--bg2); }
+
+/* Fault direction buttons */
+.fdir-btn {
+  padding: 5px 7px; border-radius: 6px; font-size: 10px; font-weight: 600;
+  background: var(--bg3); color: var(--fg2); border: 2px solid transparent;
+}
+.fdir-btn.sel { border-color: var(--amber); color: var(--fg); background: var(--bg2); }
+
+/* Last shot direction buttons */
+.lsdir-btn {
+  padding: 6px 9px; border-radius: 7px; font-size: 11px; font-weight: 600;
+  background: var(--bg3); color: var(--fg2); border: 2px solid transparent;
+}
+.lsdir-btn.sel { border-color: var(--accent); color: var(--fg); background: var(--bg2); }
+.lsdir-btn.outcome-btn.sel { border-color: var(--red); color: var(--fg); }
+
+/* Score analysis table */
+.score-sit-grid {
+  display: grid; grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 3px 6px; font-size: 11px; margin-top: 4px;
+}
+.score-sit-grid .hdr { font-weight: 700; color: var(--fg2); padding-bottom: 2px; }
+.score-sit-grid .val { text-align: right; }
+.score-sit-grid .sit { color: var(--fg2); }
+.score-sit-grid .good { color: var(--green); font-weight: 700; }
+.score-sit-grid .bad  { color: var(--red);   font-weight: 700; }
+
 /* ─── POINT LOG SCREEN ───────────────────────────────── */
 #pointlog { padding: 0; }
 .delete-confirm-bar {
@@ -485,6 +518,19 @@ h2 { font-size: 1.15rem; font-weight: 700; }
           <button class="smod-btn ace-btn" id="smod-2a" disabled onclick="servemod('2ace')">2nd ACE</button>
         </div>
       </div>
+      <div id="fault-dir-area" style="display:none;margin-top:5px">
+        <div class="ls-section-label" style="margin-bottom:3px">Fault placement</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          <button class="fdir-btn" onclick="toggleFaultDir('Wide wide',this)">Wide W</button>
+          <button class="fdir-btn" onclick="toggleFaultDir('Wide long',this)">Wide L</button>
+          <button class="fdir-btn" onclick="toggleFaultDir('Wide net',this)">Wide N</button>
+          <button class="fdir-btn" onclick="toggleFaultDir('T wide',this)">T W</button>
+          <button class="fdir-btn" onclick="toggleFaultDir('T long',this)">T L</button>
+          <button class="fdir-btn" onclick="toggleFaultDir('T net',this)">T N</button>
+          <button class="fdir-btn" onclick="toggleFaultDir('Body long',this)">Body L</button>
+          <button class="fdir-btn" onclick="toggleFaultDir('Body net',this)">Body N</button>
+        </div>
+      </div>
       <div class="psf-row">
         <span class="psf-label">Point so far</span>
         <div class="psf-strip" id="psf-strip">
@@ -533,11 +579,34 @@ h2 { font-size: 1.15rem; font-weight: 700; }
     <button class="ww-confirm" id="ww-confirm" onclick="commitPoint()" disabled>Log Point →</button>
   </div>
   <div class="ww-right">
+    <div class="ls-section-label">2nd last — optional</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;margin-top:3px">
+      <button class="tls-btn" onclick="toggle2ndLast('FH',this)">FH</button>
+      <button class="tls-btn" onclick="toggle2ndLast('BH',this)">BH</button>
+      <button class="tls-btn" onclick="toggle2ndLast('FH volley',this)">FH Vol</button>
+      <button class="tls-btn" onclick="toggle2ndLast('BH volley',this)">BH Vol</button>
+      <button class="tls-btn" onclick="toggle2ndLast('Smash',this)">Smash</button>
+    </div>
     <div class="ls-section-label">Last shot — optional</div>
     <div class="ls-section-label" style="color:#16a34a;margin-top:4px">Winners</div>
     <div class="ls-grid" id="ls-winners"></div>
     <div class="ls-section-label" style="color:#dc2626;margin-top:6px">Errors</div>
     <div class="ls-grid" id="ls-errors"></div>
+    <div id="ls-dir-area" style="display:none;margin-top:6px">
+      <div class="ls-section-label" id="ls-dir-label" style="margin-bottom:3px">Direction — optional</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px" id="ls-dir-cat-row">
+        <button class="lsdir-btn" onclick="toggleShotDirCat('Line',this)">Line</button>
+        <button class="lsdir-btn" onclick="toggleShotDirCat('Cross',this)">Cross</button>
+        <button class="lsdir-btn" onclick="toggleShotDirCat('Inside in',this)">In-in</button>
+        <button class="lsdir-btn" onclick="toggleShotDirCat('Inside out',this)">In-out</button>
+        <button class="lsdir-btn" id="ls-dir-middle" onclick="toggleShotDirCat('Middle',this)">Middle</button>
+      </div>
+      <div id="ls-dir-out-row" style="display:none;flex-wrap:wrap;gap:4px;margin-top:4px">
+        <button class="lsdir-btn outcome-btn" onclick="toggleShotDirOut('net',this)">Net</button>
+        <button class="lsdir-btn outcome-btn" onclick="toggleShotDirOut('long',this)">Long</button>
+        <button class="lsdir-btn outcome-btn" onclick="toggleShotDirOut('wide',this)">Wide</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -606,7 +675,12 @@ let cur = {
   outcome: '1st in',
   aceDir: null,
   shots: [],
+  twoLastShot: '', // 2nd last shot (shot before last shot)
   lastShot: '',
+  faultDir: '',         // fault/DF placement e.g. 'Wide long'
+  lastShotDir: '',      // last shot direction e.g. 'Cross winner', 'Line net'
+  _lsDirCat: '',        // internal: Line/Cross/Inside in/Inside out/Middle
+  _lsDirOut: '',        // internal: net/long/wide (errors only)
 };
 
 const LS_WINNERS = [
@@ -653,10 +727,64 @@ function buildLastShotGrids() {
   makeGrid('ls-errors',  LS_ERRORS,  'error-type');
 }
 
+function toggle2ndLast(val, btn) {
+  cur.twoLastShot = cur.twoLastShot === val ? '' : val;
+  document.querySelectorAll('.tls-btn').forEach(b => b.classList.remove('sel'));
+  if (cur.twoLastShot) btn.classList.add('sel');
+}
+
+function toggleFaultDir(val, btn) {
+  cur.faultDir = cur.faultDir === val ? '' : val;
+  document.querySelectorAll('.fdir-btn').forEach(b => b.classList.remove('sel'));
+  if (cur.faultDir) btn.classList.add('sel');
+}
+
 function toggleLastShot(val, btn) {
-  cur.lastShot = cur.lastShot === val ? '' : val;
+  const same = cur.lastShot === val;
+  cur.lastShot = same ? '' : val;
   document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
   if (cur.lastShot) btn.classList.add('sel');
+
+  // Reset direction when shot type changes
+  cur.lastShotDir = ''; cur._lsDirCat = ''; cur._lsDirOut = '';
+  document.querySelectorAll('.lsdir-btn').forEach(b => b.classList.remove('sel'));
+
+  if (!cur.lastShot) {
+    document.getElementById('ls-dir-area').style.display = 'none';
+    return;
+  }
+  const isWinner = cur.lastShot.includes('winner');
+  document.getElementById('ls-dir-area').style.display = '';
+  // Middle only relevant for errors
+  document.getElementById('ls-dir-middle').style.display = isWinner ? 'none' : '';
+  // Outcome row (net/long/wide) only for errors
+  document.getElementById('ls-dir-out-row').style.display = 'none';
+}
+
+function toggleShotDirCat(val, btn) {
+  cur._lsDirCat = cur._lsDirCat === val ? '' : val;
+  document.querySelectorAll('#ls-dir-cat-row .lsdir-btn').forEach(b => b.classList.remove('sel'));
+  if (cur._lsDirCat) btn.classList.add('sel');
+
+  const isWinner = cur.lastShot.includes('winner');
+  if (isWinner) {
+    cur.lastShotDir = cur._lsDirCat ? `${cur._lsDirCat} winner` : '';
+    document.getElementById('ls-dir-out-row').style.display = 'none';
+  } else {
+    // Show outcome row
+    document.getElementById('ls-dir-out-row').style.display = cur._lsDirCat ? 'flex' : 'none';
+    // Reset outcome when category changes
+    cur._lsDirOut = '';
+    document.querySelectorAll('.outcome-btn').forEach(b => b.classList.remove('sel'));
+    cur.lastShotDir = ''; // incomplete until outcome chosen
+  }
+}
+
+function toggleShotDirOut(val, btn) {
+  cur._lsDirOut = cur._lsDirOut === val ? '' : val;
+  document.querySelectorAll('.outcome-btn').forEach(b => b.classList.remove('sel'));
+  if (cur._lsDirOut) btn.classList.add('sel');
+  cur.lastShotDir = (cur._lsDirCat && cur._lsDirOut) ? `${cur._lsDirCat} ${cur._lsDirOut}` : '';
 }
 
 let pendingDeleteIdx = null;
@@ -677,6 +805,11 @@ function goScreen(id) {
       b.classList.remove('ww-sel','ww-dim');
     });
     document.getElementById('ww-confirm').disabled = true;
+    document.querySelectorAll('.tls-btn').forEach(b => b.classList.remove('sel'));
+    cur.twoLastShot = '';
+    document.getElementById('ls-dir-area').style.display = 'none';
+    document.querySelectorAll('.lsdir-btn').forEach(b => b.classList.remove('sel'));
+    cur.lastShotDir = ''; cur._lsDirCat = ''; cur._lsDirOut = '';
   }
 }
 
@@ -766,9 +899,13 @@ function resetPoint() {
     server: null, side: null,
     set: document.getElementById('set-sel').value,
     outcome: '1st in',
-    aceDir: null, shots: [], lastShot: ''
+    aceDir: null, shots: [], twoLastShot: '', lastShot: '',
+    faultDir: '', lastShotDir: '', _lsDirCat: '', _lsDirOut: ''
   };
   document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('.tls-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('fault-dir-area').style.display = 'none';
+  document.querySelectorAll('.fdir-btn').forEach(b => b.classList.remove('sel'));
 
   // server buttons: clear selection, re-enable pulse
   ['srv-p','srv-o'].forEach(id => {
@@ -838,6 +975,14 @@ function setShotLock(locked) {
   document.querySelectorAll('.net-btn').forEach(b => b.disabled = locked);
 }
 
+function showFaultDir(show) {
+  document.getElementById('fault-dir-area').style.display = show ? '' : 'none';
+  if (!show) {
+    document.querySelectorAll('.fdir-btn').forEach(b => b.classList.remove('sel'));
+    cur.faultDir = '';
+  }
+}
+
 // smod values: '1fault','2fault','1ace','2ace'
 function servemod(action) {
   // clear all smod sel states first
@@ -854,6 +999,7 @@ function servemod(action) {
     cur.outcome = '2nd in';
     cur.aceDir = null; cur.shots = [];
     showAceDir(false);
+    showFaultDir(true);
     updatePSF(); updateFinishBtn(); updateUndoBtn();
 
   } else if (action === '2fault') {
@@ -861,6 +1007,7 @@ function servemod(action) {
     cur.outcome = 'Double fault';
     // Disable shot buttons — DF means play is over
     setShotLock(true);
+    showFaultDir(true); // reset for 2nd serve fault direction
     updatePSF();
     // Enable Point Finished so user confirms (no auto-log)
     document.getElementById('finish-btn').disabled = false;
@@ -871,6 +1018,7 @@ function servemod(action) {
     cur.outcome = '1st ACE';
     cur.aceDir = null; cur.shots = [];
     showAceDir(true);
+    showFaultDir(false);
     updatePSF();
     document.getElementById('finish-btn').disabled = true;
     updateUndoBtn();
@@ -880,6 +1028,7 @@ function servemod(action) {
     cur.outcome = '2nd ACE';
     cur.aceDir = null; cur.shots = [];
     showAceDir(true);
+    showFaultDir(false);
     updatePSF();
     document.getElementById('finish-btn').disabled = true;
     updateUndoBtn();
@@ -1027,7 +1176,10 @@ function logPoint(winnerCode) {
     'Serve+1': cur.shots[1] || '',
     'Return+1': cur.shots[2] || '',
     'Serve+2': cur.shots[3] || '',
+    '2nd last shot': cur.twoLastShot || '',
     'Last shot': cur.lastShot || '',
+    'Fault direction': cur.faultDir || '',
+    'Last shot direction': cur.lastShotDir || '',
     Winner: winnerName,
     _winCode: winnerCode,
     _serverCode: cur.server
@@ -1317,7 +1469,102 @@ function renderAnalyse() {
     html += `<div class="stat-card">${lsHtml}</div>`;
   }
 
-  // ── 9. By Set ──
+  // ── 9. Score Analysis ──
+  const scoreData = computeScoreColumns(match.points, P, O);
+  if (scoreData.length) {
+    // Player serving: win % by score situation
+    const SIT_ORDER = ['0-0','15-0','0-15','30-0','15-15','0-30','40-0','30-15','15-30','0-40','Deuce','Ad Server','Ad Returner','Break point','Server game pt'];
+    const sitWin = {};  // sit -> {won, total}
+    const bpData = { pConvert: {won:0,total:0}, pSave: {won:0,total:0} };
+
+    for (let i = 0; i < match.points.length; i++) {
+      const pt = match.points[i];
+      const sc = scoreData[i];
+      if (!sc || sc.Mode !== 'NORMAL') continue;
+      const sit = sc.ScoreSituation;
+      if (!sitWin[sit]) sitWin[sit] = {won:0, total:0};
+      const isServerP = sc.ServerIsPlayer;
+      const playerWon = pt._winCode === 'P';
+      // Score situation for player context: if player is returner, flip BP/server GP labels
+      let displaySit = sit;
+      if (!isServerP) {
+        if (sit === 'Break point') displaySit = 'Break point (opp)';
+        else if (sit === 'Ad Server') displaySit = 'Ad Opp';
+        else if (sit === 'Ad Returner') displaySit = 'Ad Player';
+      }
+      if (!sitWin[displaySit]) sitWin[displaySit] = {won:0, total:0};
+      sitWin[displaySit].total++;
+      if (playerWon) sitWin[displaySit].won++;
+
+      // Break point tracking: player serving
+      if (isServerP && sc.IsBreakPoint) {
+        bpData.pSave.total++;
+        if (playerWon) bpData.pSave.won++;
+      }
+      // Break point tracking: player returning
+      if (!isServerP && sc.IsBreakPoint) {
+        bpData.pConvert.total++;
+        if (playerWon) bpData.pConvert.won++;
+      }
+    }
+
+    let scHtml = `<div class="stat-card-title">Score Analysis</div>`;
+    // Break points
+    scHtml += `<div class="stat-sub">Break Points</div>`;
+    if (bpData.pConvert.total) {
+      scHtml += barRow('BP converted (returning)', bpData.pConvert.won, bpData.pConvert.total, 'var(--green)');
+    }
+    if (bpData.pSave.total) {
+      scHtml += barRow('BP saved (serving)', bpData.pSave.won, bpData.pSave.total, 'var(--amber)');
+    }
+    // Game situation win% (top situations by frequency)
+    const sitKeys = Object.keys(sitWin).filter(k => sitWin[k].total >= 2)
+      .sort((a,b) => sitWin[b].total - sitWin[a].total).slice(0, 10);
+    if (sitKeys.length) {
+      scHtml += `<div class="stat-sub" style="margin-top:6px">Win % by Game Situation</div>`;
+      const gridRows = [['Situation','Won','Win%']];
+      sitKeys.forEach(k => {
+        const {won, total} = sitWin[k];
+        const w = pct(won, total);
+        const cls = w >= 55 ? 'good' : w <= 40 ? 'bad' : '';
+        scHtml += `<div class="score-sit-grid">
+          <span class="sit">${k}</span>
+          <span class="val">${won}/${total}</span>
+          <span class="val ${cls}">${w}%</span>
+        </div>`;
+      });
+    }
+    html += `<div class="stat-card">${scHtml}</div>`;
+  }
+
+  // ── 10. Serve Direction ──
+  const oH2 = match.oppHand || 'R';
+  const dirData = { pServe: { Wide:{won:0,total:0}, T:{won:0,total:0} } };
+  for (const pt of match.points) {
+    if (pt._serverCode !== 'P') continue;
+    let dir = '';
+    if (pt['ACE direction'] && ['Wide','T'].includes(pt['ACE direction'])) {
+      dir = pt['ACE direction'];
+    } else if (pt.Return) {
+      dir = serveDirection(pt.Side, pt.Return, oH2);
+    }
+    if (!dir) continue;
+    dirData.pServe[dir].total++;
+    if (pt._winCode === 'P') dirData.pServe[dir].won++;
+  }
+  const wideTotal = dirData.pServe.Wide.total;
+  const tTotal = dirData.pServe.T.total;
+  if (wideTotal + tTotal > 0) {
+    const wideWon = dirData.pServe.Wide.won;
+    const tWon = dirData.pServe.T.won;
+    let dirHtml = `<div class="stat-card-title">Serve Direction</div>`;
+    dirHtml += `<div class="stat-sub">${P} serve direction (derived)</div>`;
+    if (wideTotal) dirHtml += barRow('Wide', wideWon, wideTotal, 'var(--accent)');
+    if (tTotal)    dirHtml += barRow('T', tWon, tTotal, 'var(--purple)');
+    html += `<div class="stat-card">${dirHtml}</div>`;
+  }
+
+  // ── 11. By Set ──
   if (bySet.length > 1) {
     let setHtml = `<div class="stat-card-title">By Set</div>`;
     bySet.forEach(sv => {
@@ -1326,7 +1573,7 @@ function renderAnalyse() {
     html += `<div class="stat-card">${setHtml}</div>`;
   }
 
-  // ── 10. Coaching Point ──
+  // ── 12. Coaching Point ──
   html += `<div class="coaching-card"><div class="coaching-label">🎯 Coaching point</div><div class="coaching-text">${coaching}</div></div>`;
 
   body.innerHTML = html;
@@ -1335,6 +1582,199 @@ function renderAnalyse() {
 function pct(n, d) {
   if (!d) return 0;
   return Math.round(100 * n / d);
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCORE ENGINE  (port of score_engine.py)
+// ═══════════════════════════════════════════════════════
+const POINT_LABEL = {0:'0', 1:'15', 2:'30', 3:'40'};
+
+function computeScoreColumns(pts, playerName, oppName) {
+  // Returns array of objects with score metadata for each point (same order as pts)
+  if (!pts.length) return [];
+
+  // --- Step 1: segment into blocks (consecutive same-server + same-set rows)
+  const blocks = [];
+  let cur_block = null;
+  for (let i = 0; i < pts.length; i++) {
+    const pt = pts[i];
+    const srv = pt.Server;
+    const set = pt.Set;
+    if (!cur_block || cur_block.server !== srv || cur_block.set !== set) {
+      cur_block = { server: srv, set: set, indices: [], start: i };
+      blocks.push(cur_block);
+    }
+    cur_block.indices.push(i);
+  }
+
+  // --- Step 2: detect tiebreaks per set
+  // Tiebreak signature: a 1-point block. The first such block in a set = start of tiebreak.
+  // All subsequent blocks in that set with <=2 points are also TIEBREAK.
+  // 'Match-tiebreaker' set name => MATCH_TB
+  const setTBStart = {}; // setName -> block index of tiebreak start
+  for (let bi = 0; bi < blocks.length; bi++) {
+    const b = blocks[bi];
+    if (b.set === 'Match-tiebreaker') {
+      b.mode = 'MATCH_TB';
+      continue;
+    }
+    if (!(b.set in setTBStart)) {
+      if (b.indices.length === 1) {
+        setTBStart[b.set] = bi;
+        b.mode = 'TIEBREAK';
+      } else {
+        b.mode = 'NORMAL';
+      }
+    } else {
+      b.mode = (b.indices.length <= 2) ? 'TIEBREAK' : 'NORMAL';
+    }
+  }
+
+  // --- Step 3: walk through blocks computing running scores
+  const result = new Array(pts.length);
+
+  // Track set scores across blocks
+  const setScores = {}; // setName -> {P: games, O: games}
+
+  for (let bi = 0; bi < blocks.length; bi++) {
+    const b = blocks[bi];
+    const mode = b.mode;
+
+    if (!(b.set in setScores)) setScores[b.set] = {P: 0, O: 0};
+    const sg = setScores[b.set];
+
+    if (mode === 'TIEBREAK' || mode === 'MATCH_TB') {
+      // Tiebreak: points count directly
+      // Across all tiebreak blocks in this set, maintain cumulative tiebreak score
+      // Need to track cumulative across blocks — find all TB blocks so far in this set
+      let tbP = 0, tbO = 0;
+      // sum previous TB blocks in same set
+      for (let pbi = 0; pbi < bi; pbi++) {
+        const pb = blocks[pbi];
+        if (pb.set === b.set && (pb.mode === 'TIEBREAK' || pb.mode === 'MATCH_TB')) {
+          for (const idx of pb.indices) {
+            const pt = pts[idx];
+            if (pt._winCode === 'P') tbP++; else tbO++;
+          }
+        }
+      }
+      // Walk this block
+      for (const idx of b.indices) {
+        const pt = pts[idx];
+        const isServerP = pt._serverCode === 'P';
+        result[idx] = {
+          GameScore: `${tbP}-${tbO}`,
+          SetScore: `${sg.P}-${sg.O}`,
+          Set: b.set,
+          Mode: mode,
+          IsBreakPoint: false,
+          IsServerGamePt: false,
+          ScoreSituation: `TB ${tbP}-${tbO}`,
+          ServerIsPlayer: isServerP
+        };
+        if (pt._winCode === 'P') tbP++; else tbO++;
+      }
+    } else {
+      // NORMAL game
+      let ps = 0, pr = 0; // server points, returner points
+      const isServerP = pts[b.indices[0]]._serverCode === 'P';
+
+      for (const idx of b.indices) {
+        const pt = pts[idx];
+        // Scores BEFORE applying this point
+        const psL = POINT_LABEL[ps] || String(ps);
+        const prL = POINT_LABEL[pr] || String(pr);
+
+        let gameScore, scoreSit, isBreakPt, isServerGP;
+
+        if (ps >= 3 && pr >= 3) {
+          // Deuce or Advantage
+          if (ps === pr) {
+            gameScore = 'Deuce';
+            scoreSit = 'Deuce';
+            isBreakPt = false;
+            isServerGP = false;
+          } else if (ps > pr) {
+            gameScore = 'Ad Server';
+            scoreSit = 'Ad Server';
+            isBreakPt = false;
+            isServerGP = true;
+          } else {
+            gameScore = 'Ad Returner';
+            scoreSit = 'Ad Returner';
+            isBreakPt = true;
+            isServerGP = false;
+          }
+        } else {
+          gameScore = `${psL}-${prL}`;
+          isBreakPt = (pr >= 3 && pr > ps);
+          isServerGP = (ps >= 3 && ps > pr);
+          // Classify score situation
+          if (ps === 0 && pr === 0) {
+            scoreSit = '0-0';
+          } else if (isBreakPt) {
+            scoreSit = 'Break point';
+          } else if (isServerGP) {
+            scoreSit = 'Server game pt';
+          } else {
+            scoreSit = gameScore; // e.g. '15-0', '0-30', etc.
+          }
+        }
+
+        result[idx] = {
+          GameScore: gameScore,
+          SetScore: `${sg.P}-${sg.O}`,
+          Set: b.set,
+          Mode: mode,
+          IsBreakPoint: isBreakPt,
+          IsServerGamePt: isServerGP,
+          ScoreSituation: scoreSit,
+          ServerIsPlayer: isServerP
+        };
+
+        // Apply outcome
+        if (pt._winCode === pt._serverCode) ps++; else pr++;
+
+        // Did server win game?
+        const srvWon = (pr < ps && ps >= 4) ||
+                       (ps >= 3 && pr >= 3 && ps > pr);
+        // Did returner win game?
+        const retWon = (ps < pr && pr >= 4) ||
+                       (ps >= 3 && pr >= 3 && pr > ps);
+
+        if (srvWon || retWon) {
+          // determine who won in P/O terms
+          if (srvWon) {
+            if (isServerP) sg.P++; else sg.O++;
+          } else {
+            if (isServerP) sg.O++; else sg.P++;
+          }
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+// Derive serve direction (Wide or T) from court side + return shot + receiver handedness
+// Returns 'Wide', 'T', or '' (unknown)
+function serveDirection(side, returnShot, receiverHand) {
+  if (!side || !returnShot) return '';
+  const rh = receiverHand || 'R';
+  const shot = returnShot.toUpperCase().startsWith('FH') ? 'FH' :
+               returnShot.toUpperCase().startsWith('BH') ? 'BH' : '';
+  if (!shot) return '';
+  // Deuce court: FH(R-hand)=Wide, BH=T; Ad court: FH=T, BH=Wide
+  // (reversed for left-hander)
+  if (rh === 'R') {
+    if (side === 'Deuce') return shot === 'FH' ? 'Wide' : 'T';
+    if (side === 'Ad')    return shot === 'FH' ? 'T'    : 'Wide';
+  } else {
+    if (side === 'Deuce') return shot === 'BH' ? 'Wide' : 'T';
+    if (side === 'Ad')    return shot === 'BH' ? 'T'    : 'Wide';
+  }
+  return '';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1432,7 +1872,8 @@ function downloadCSV() {
 
   // Sheet 2: Point-by-point data (unchanged columns)
   const cols = ['Set','Server','Side','Serve outcome','ACE direction',
-                'Return','Serve+1','Return+1','Serve+2','Last shot','Winner'];
+                'Return','Serve+1','Return+1','Serve+2','2nd last shot','Last shot',
+                'Fault direction','Last shot direction','Winner'];
   const rows = match.points.map(pt => cols.map(c => pt[c] || ''));
   const ws2 = XLSX.utils.aoa_to_sheet([cols, ...rows]);
   XLSX.utils.book_append_sheet(wb, ws2, 'Points');
@@ -1591,7 +2032,76 @@ function downloadStats() {
   ];
   XLSX.utils.book_append_sheet(wb, makeSheet(lsRows), 'Last Shot Analysis');
 
-  // ── Sheet 7: Set Breakdown ──
+  // ── Sheet 7: Score Analysis ──
+  const scoreData = computeScoreColumns(match.points, P, O);
+  if (scoreData.length) {
+    const sitTally = {}; // sit -> {won, total}
+    const bpConvert = {won:0, total:0};
+    const bpSave    = {won:0, total:0};
+    for (let i = 0; i < match.points.length; i++) {
+      const pt = match.points[i];
+      const sc = scoreData[i];
+      if (!sc || sc.Mode !== 'NORMAL') continue;
+      const isServerP = sc.ServerIsPlayer;
+      const playerWon = pt._winCode === 'P';
+      let sit = sc.ScoreSituation;
+      if (!isServerP) {
+        if (sit === 'Break point') sit = 'Break point (opp BP)';
+        else if (sit === 'Ad Server') sit = 'Ad Opp';
+        else if (sit === 'Ad Returner') sit = 'Ad Player';
+      }
+      if (!sitTally[sit]) sitTally[sit] = {won:0, total:0};
+      sitTally[sit].total++;
+      if (playerWon) sitTally[sit].won++;
+      if (isServerP && sc.IsBreakPoint) {
+        bpSave.total++; if (playerWon) bpSave.won++;
+      }
+      if (!isServerP && sc.IsBreakPoint) {
+        bpConvert.total++; if (playerWon) bpConvert.won++;
+      }
+    }
+    const scRows = [
+      ['Score Situation', P+' won', 'Total', P+' win %'],
+      bpConvert.total ? ['BP Converted (returning)', bpConvert.won, bpConvert.total, pct(bpConvert.won, bpConvert.total)] : null,
+      bpSave.total    ? ['BP Saved (serving)',        bpSave.won,    bpSave.total,    pct(bpSave.won, bpSave.total)]       : null,
+      ['','','',''],
+      ...Object.entries(sitTally)
+        .sort((a,b) => b[1].total - a[1].total)
+        .map(([sit,{won,total}]) => [sit, won, total, pct(won, total)]),
+    ].filter(Boolean);
+    XLSX.utils.book_append_sheet(wb, makeSheet(scRows), 'Score Analysis');
+  }
+
+  // ── Sheet 8: Direction Analysis ──
+  const dirTally2 = {
+    pServe: { Wide:{won:0,total:0}, T:{won:0,total:0} },
+    oServe: { Wide:{won:0,total:0}, T:{won:0,total:0} },
+  };
+  for (const pt of match.points) {
+    const isServerP = pt._serverCode === 'P';
+    let dir = '';
+    if (pt['ACE direction'] && ['Wide','T'].includes(pt['ACE direction'])) {
+      dir = pt['ACE direction'];
+    } else if (pt.Return) {
+      const receiverHand = isServerP ? (match.oppHand||'R') : (match.playerHand||'R');
+      dir = serveDirection(pt.Side, pt.Return, receiverHand);
+    }
+    if (!dir) continue;
+    const key = isServerP ? 'pServe' : 'oServe';
+    dirTally2[key][dir].total++;
+    if (pt._winCode === 'P') dirTally2[key][dir].won++;
+  }
+  const dirRows = [
+    ['Serve Direction', 'Points', P+' won', P+' win%'],
+    [`${P} Wide`, dirTally2.pServe.Wide.total, dirTally2.pServe.Wide.won, pct(dirTally2.pServe.Wide.won, dirTally2.pServe.Wide.total)],
+    [`${P} T`,    dirTally2.pServe.T.total,    dirTally2.pServe.T.won,    pct(dirTally2.pServe.T.won,    dirTally2.pServe.T.total)],
+    ['','','',''],
+    [`${O} Wide (${P} returning)`, dirTally2.oServe.Wide.total, dirTally2.oServe.Wide.won, pct(dirTally2.oServe.Wide.won, dirTally2.oServe.Wide.total)],
+    [`${O} T (${P} returning)`,    dirTally2.oServe.T.total,    dirTally2.oServe.T.won,    pct(dirTally2.oServe.T.won,    dirTally2.oServe.T.total)],
+  ];
+  XLSX.utils.book_append_sheet(wb, makeSheet(dirRows), 'Direction Analysis');
+
+  // ── Sheet 9: Set Breakdown ──
   if (bySet.length > 0) {
     const setRows = [
       ['Set','Points played',P+' won',P+' win %',O+' won',O+' win %'],
