@@ -277,10 +277,10 @@ h2 { font-size: 1.15rem; font-weight: 700; }
   line-height: 1.2; text-align: center;
 }
 .ls-btn.sel { border-color: var(--accent); color: var(--fg); background: var(--bg2); }
-.ls-btn.winner-type { color: #4ade80; }
-.ls-btn.error-type { color: #f87171; }
-.ls-btn.winner-type.sel { background: #14532d; border-color: var(--green); color: #bbf7d0; }
-.ls-btn.error-type.sel { background: #3d1515; border-color: var(--red); color: #fecaca; }
+.ls-btn.winner-type { color: #16a34a; }
+.ls-btn.error-type { color: #dc2626; }
+.ls-btn.winner-type.sel { background: #14532d; border-color: var(--green); color: #86efac; }
+.ls-btn.error-type.sel { background: #3d1515; border-color: var(--red); color: #fca5a5; }
 
 /* ─── POINT LOG SCREEN ───────────────────────────────── */
 #pointlog { padding: 0; }
@@ -494,9 +494,9 @@ h2 { font-size: 1.15rem; font-weight: 700; }
   </div>
   <div class="ww-right">
     <div class="ls-section-label">Last shot — optional</div>
-    <div class="ls-section-label" style="color:#4ade80;margin-top:4px">Winners</div>
+    <div class="ls-section-label" style="color:#16a34a;margin-top:4px">Winners</div>
     <div class="ls-grid" id="ls-winners"></div>
-    <div class="ls-section-label" style="color:#f87171;margin-top:6px">Errors</div>
+    <div class="ls-section-label" style="color:#dc2626;margin-top:6px">Errors</div>
     <div class="ls-grid" id="ls-errors"></div>
   </div>
 </div>
@@ -568,21 +568,27 @@ let cur = {
 
 const LS_WINNERS = [
   'FH winner','BH winner',
-  'Return FH winner','Return BH winner',
   'Volley FH winner','Volley BH winner',
+  'Smash winner',
+  'Drop shot winner FH','Drop shot winner BH',
+  'Dead net cord winner',
+  'Return FH winner','Return BH winner',
   'Passing FH winner','Passing BH winner',
   'Lob FH winner','Lob BH winner',
-  'Smash winner','Dead net cord winner'
+  'Drive volley FH winner','Drive volley BH winner'
 ];
 const LS_ERRORS = [
   'FH unforced error','BH unforced error',
   'FH forced error','BH forced error',
+  'Volley FH error','Volley BH error',
+  'Smash error',
+  'Drop shot error FH','Drop shot error BH',
   'Return FH unforced error','Return BH unforced error',
   'Return FH forced error','Return BH forced error',
-  'Volley FH error','Volley BH error',
   'Passing FH unforced error','Passing BH unforced error',
+  'Passing FH forced error','Passing BH forced error',
   'Lob FH error','Lob BH error',
-  'Smash error'
+  'Drive volley FH error','Drive volley BH error'
 ];
 
 function buildLastShotGrids() {
@@ -593,8 +599,8 @@ function buildLastShotGrids() {
       const b = document.createElement('button');
       b.className = `ls-btn ${cls}`;
       b.textContent = s
-        .replace(' winner','').replace(' unforced error',' UFE').replace(' forced error',' FE')
-        .replace(' error',' E');
+        .replace(' winner','').replace(' unforced error',' unforced').replace(' forced error',' forced')
+        .replace(' error','');
       b.title = s;
       b.onclick = () => toggleLastShot(s, b);
       el.appendChild(b);
