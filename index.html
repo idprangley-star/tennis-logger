@@ -212,7 +212,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .fh-btn:disabled { background: var(--bg3); color: var(--fg2); }
 .bh-btn:disabled { background: var(--bg3); color: var(--fg2); }
 
-.net-row { display: flex; gap: 5px; flex-shrink: 0; }
+.net-row { display: flex; gap: 5px; flex-shrink: 0; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
 .net-btn {
   flex: 1; padding: 11px 4px; border-radius: 8px;
   font-size: 11px; font-weight: 700;
@@ -824,7 +824,7 @@ function servemod(action) {
     cur.outcome = '2nd in';
     cur.aceDir = null; cur.shots = [];
     showAceDir(false);
-    updatePSF(); updateFinishBtn();
+    updatePSF(); updateFinishBtn(); updateUndoBtn();
 
   } else if (action === '2fault') {
     document.getElementById('smod-2f').classList.add('sel');
@@ -834,6 +834,7 @@ function servemod(action) {
     updatePSF();
     // Enable Point Finished so user confirms (no auto-log)
     document.getElementById('finish-btn').disabled = false;
+    updateUndoBtn();
 
   } else if (action === '1ace') {
     document.getElementById('smod-1a').classList.add('sel');
@@ -842,6 +843,7 @@ function servemod(action) {
     showAceDir(true);
     updatePSF();
     document.getElementById('finish-btn').disabled = true;
+    updateUndoBtn();
 
   } else if (action === '2ace') {
     document.getElementById('smod-2a').classList.add('sel');
@@ -850,6 +852,7 @@ function servemod(action) {
     showAceDir(true);
     updatePSF();
     document.getElementById('finish-btn').disabled = true;
+    updateUndoBtn();
   }
 }
 
@@ -895,7 +898,7 @@ function addShot(type) {
     document.getElementById('bh-btn').disabled = true;
     document.querySelectorAll('.net-btn').forEach(b => b.disabled = true);
   }
-  document.getElementById('undo-btn').disabled = false;
+  updateUndoBtn();
 }
 
 function updatePSF() {
@@ -1004,6 +1007,11 @@ function logPoint(winnerCode) {
   resetPoint();
 }
 
+function updateUndoBtn() {
+  const hasHistory = cur.shots.length > 0 || !!cur.aceDir || cur.outcome !== '1st in';
+  document.getElementById('undo-btn').disabled = !hasHistory;
+}
+
 function undoShot() {
   if (cur.shots.length > 0) {
     cur.shots.pop();
@@ -1020,9 +1028,22 @@ function undoShot() {
       document.getElementById(id).classList.remove('sel'));
     updatePSF();
     document.getElementById('finish-btn').disabled = true;
+  } else if (cur.outcome !== '1st in') {
+    // Reset serve outcome all the way back to default 1st serve
+    cur.outcome = '1st in';
+    cur.aceDir = null; cur.shots = [];
+    ['smod-1f','smod-2f','smod-1a','smod-2a'].forEach(id =>
+      document.getElementById(id).classList.remove('sel'));
+    document.getElementById('smod-1f').disabled = false;
+    document.getElementById('smod-1a').disabled = false;
+    document.getElementById('smod-2f').disabled = true;
+    document.getElementById('smod-2a').disabled = true;
+    if (cur.server && cur.side) setShotLock(false);
+    showAceDir(false);
+    updatePSF();
+    updateFinishBtn();
   }
-  document.getElementById('undo-btn').disabled =
-    cur.shots.length === 0 && !cur.aceDir;
+  updateUndoBtn();
 }
 
 // ═══════════════════════════════════════════════════════
