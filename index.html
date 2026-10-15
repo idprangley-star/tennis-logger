@@ -2,6 +2,7 @@
 <title>Tennis Logger</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ─── TOKENS ─────────────────────────────────────────── */
 :root {
@@ -383,9 +384,9 @@ h2 { font-size: 1.15rem; font-weight: 700; }
       <div class="form-label">Opponent name</div>
       <input id="s-opp" type="text" placeholder="e.g. Smith" autocomplete="off">
     </div>
-    <div class="form-row">
+    <div class="form-row" style="overflow:hidden">
       <div class="form-label">Date</div>
-      <input id="s-date" type="date" autocomplete="off">
+      <input id="s-date" type="date" autocomplete="off" style="width:100%;max-width:100%;box-sizing:border-box">
     </div>
     <div class="form-row">
       <div class="form-label">Tournament</div>
@@ -473,7 +474,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
       </div>
       <div class="shot-btns" id="shot-area">
         <!-- normal FH/BH shown by default; replaced by ace-dir when ACE selected -->
-        <div id="fbh-area" style="display:flex;flex-direction:column;flex:1;min-height:0;gap:6px">
+        <div id="fbh-area" style="display:flex;flex-direction:column;flex:1;min-height:0;gap:10px">
           <div class="fh-bh-row">
             <button class="fh-btn" id="fh-btn" disabled onclick="addShot('FH')">FH</button>
             <button class="bh-btn" id="bh-btn" disabled onclick="addShot('BH')">BH</button>
@@ -942,10 +943,10 @@ function pointFinished() {
   if (isAce) {
     logPoint(cur.server); // server wins ace
   } else if (isDF) {
-    // Returner wins DF — go to Who Won with returner pre-highlighted
+    // Returner wins DF — log directly, no Who Won screen needed
     const dfWinner = cur.server === 'P' ? 'O' : 'P';
-    goScreen('whowon');
-    selectWinner(dfWinner);
+    logPoint(dfWinner);
+    goScreen('log-screen');
   } else {
     cur.lastShot = '';
     document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
@@ -1230,26 +1231,25 @@ function renderEndMatch() {
 }
 
 function downloadCSV() {
-  const cols = ['Date','Tournament','Surface','Environment',
-                'Set','Server','Side','Serve outcome','ACE direction',
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Match Info — one header row + one data row
+  const ws1 = XLSX.utils.aoa_to_sheet([
+    ['Player','Opponent','Date','Tournament','Surface','Environment'],
+    [match.playerName, match.opp, match.date, match.tourn, match.surface, match.env]
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws1, 'Match Info');
+
+  // Sheet 2: Point-by-point data (unchanged columns)
+  const cols = ['Set','Server','Side','Serve outcome','ACE direction',
                 'Return','Serve+1','Return+1','Serve+2','Last shot','Winner'];
-  const header = cols.join(',');
-  const rows = match.points.map(pt => {
-    return cols.map(c => {
-      const v = String(pt[c] || '');
-      return v.includes(',') ? `"${v}"` : v;
-    }).join(',');
-  });
-  const csv = [header, ...rows].join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const fname = `${match.playerName}_${match.opp}_${match.date || match.tourn || 'match'}.csv`
+  const rows = match.points.map(pt => cols.map(c => pt[c] || ''));
+  const ws2 = XLSX.utils.aoa_to_sheet([cols, ...rows]);
+  XLSX.utils.book_append_sheet(wb, ws2, 'Points');
+
+  const fname = `${match.playerName}_${match.opp}_${match.date || match.tourn || 'match'}.xlsx`
     .replace(/[^a-z0-9_\-\.]/gi,'_');
-  a.download = fname;
-  a.click();
-  URL.revokeObjectURL(url);
+  XLSX.writeFile(wb, fname);
 }
 </script>
 
