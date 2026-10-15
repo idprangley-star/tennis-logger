@@ -124,9 +124,10 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .log-col {
   display: flex; flex-direction: column; gap: 6px;
   padding: 8px 6px; border-right: 1px solid var(--border);
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow-y: auto; overflow-x: hidden;
 }
+/* Middle col must NOT scroll — so the FH/BH flex-grow chain reaches the buttons */
+.log-body > .log-col:nth-child(2) { overflow: hidden; }
 .log-col:last-child { border-right: none; }
 .col-label {
   font-size: 10px; font-weight: 700; color: var(--fg2);
@@ -182,10 +183,11 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .psf-pill.net { background: var(--pill-net); }
 
 .shot-btns { display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
-.fh-bh-row { display: flex; gap: 6px; flex: 1; min-height: 0; }
+.fh-bh-row { display: flex; gap: 6px; flex: 1; min-height: 110px; }
 .fh-btn, .bh-btn {
-  flex: 1; min-height: 0; border-radius: 12px;
-  font-size: 24px; font-weight: 800;
+  flex: 1; border-radius: 12px;
+  font-size: 32px; font-weight: 800;
+  /* height fills .fh-bh-row via align-items:stretch (flex default) */
 }
 .fh-btn { background: #14532d; color: #86efac; }
 .bh-btn { background: #1e3a6e; color: #93c5fd; }
@@ -235,11 +237,13 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 }
 
 /* ─── WHO WON SCREEN ─────────────────────────────────── */
-#whowon {
-  height: 100vh; overflow: hidden;
-  display: grid;
+/* IMPORTANT: bare #whowon must NOT set display — it would override .screen{display:none} */
+#whowon.active {
+  display: grid !important;   /* override .screen.active flex */
   grid-template-columns: 1fr 1.6fr;
+  height: 100vh; overflow: hidden;
   gap: 0; padding: 0;
+  min-height: 0;
 }
 .ww-left {
   display: flex; flex-direction: column; gap: 8px; padding: 10px 8px;
