@@ -128,19 +128,21 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 }
 /* Middle col must NOT scroll — so the FH/BH flex-grow chain reaches the buttons */
 .log-body > .log-col:nth-child(2) { overflow: hidden; }
+/* Left col must NOT scroll either — all fits in landscape */
+.log-body > .log-col:nth-child(1) { overflow: hidden; }
 .log-col:last-child { border-right: none; }
 .col-label {
   font-size: 10px; font-weight: 700; color: var(--fg2);
   text-transform: uppercase; letter-spacing: .08em;
-  padding-bottom: 2px;
+  padding-bottom: 2px; flex-shrink: 0;
 }
 
 /* server/side buttons */
-.server-btns, .side-btns { display: flex; flex-direction: column; gap: 6px; }
+.server-btns, .side-btns { display: flex; flex-direction: column; gap: 5px; }
 .serve-btn, .side-btn {
-  padding: 14px 10px; border-radius: 10px;
+  padding: 10px 10px; border-radius: 10px;
   background: var(--bg3); color: var(--fg);
-  font-size: 16px; font-weight: 700;
+  font-size: 15px; font-weight: 700;
   border: 2px solid transparent; width: 100%;
 }
 .serve-btn.sel, .side-btn.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -173,10 +175,18 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .smod-btn.ace-btn.sel { background: var(--green); color: #fff; border-color: var(--green); }
 
 /* middle col: point so far + shots */
+.psf-row {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.psf-label {
+  font-size: 10px; font-weight: 700; color: var(--fg2);
+  text-transform: uppercase; letter-spacing: .08em;
+  white-space: nowrap; flex-shrink: 0;
+}
 .psf-strip {
-  display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
-  min-height: 36px;
-  background: var(--bg3); border-radius: 10px; padding: 8px;
+  display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+  flex: 1; min-height: 30px;
+  background: var(--bg3); border-radius: 8px; padding: 5px 7px;
 }
 .psf-pill {
   padding: 4px 10px; border-radius: 20px;
@@ -189,8 +199,8 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .psf-pill.bh { background: var(--pill-bh); }
 .psf-pill.net { background: var(--pill-net); }
 
-.shot-btns { display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
-.fh-bh-row { display: flex; gap: 6px; flex: 1; min-height: 110px; }
+.shot-btns { display: flex; flex-direction: column; gap: 5px; flex: 1; min-height: 0; }
+.fh-bh-row { display: flex; gap: 6px; flex: 1; min-height: 130px; }
 .fh-btn, .bh-btn {
   flex: 1; border-radius: 12px;
   font-size: 32px; font-weight: 800;
@@ -201,13 +211,14 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .fh-btn:disabled { background: var(--bg3); color: var(--fg2); }
 .bh-btn:disabled { background: var(--bg3); color: var(--fg2); }
 
-.net-row { display: flex; gap: 5px; }
+.net-row { display: flex; gap: 5px; flex-shrink: 0; }
 .net-btn {
-  flex: 1; padding: 10px 4px; border-radius: 8px;
-  font-size: 11px; font-weight: 600;
+  flex: 1; padding: 11px 4px; border-radius: 8px;
+  font-size: 11px; font-weight: 700;
   background: #2e1065; color: #c4b5fd;
+  border: 2px solid #4c1d95;
 }
-.net-btn:disabled { background: var(--bg3); color: var(--fg2); }
+.net-btn:disabled { background: var(--bg3); color: var(--fg2); border-color: transparent; }
 
 /* ace direction */
 .ace-dir-btns { display: flex; flex-direction: column; gap: 8px; }
@@ -373,8 +384,12 @@ h2 { font-size: 1.15rem; font-weight: 700; }
       <input id="s-opp" type="text" placeholder="e.g. Smith" autocomplete="off">
     </div>
     <div class="form-row">
-      <div class="form-label">Tournament / Date</div>
-      <input id="s-tourn" type="text" placeholder="e.g. ITF Aldershot · Jun 2025" autocomplete="off">
+      <div class="form-label">Date</div>
+      <input id="s-date" type="date" autocomplete="off">
+    </div>
+    <div class="form-row">
+      <div class="form-label">Tournament</div>
+      <input id="s-tourn" type="text" placeholder="e.g. ITF Aldershot" autocomplete="off">
     </div>
     <div class="form-row">
       <div class="form-label">Environment</div>
@@ -424,20 +439,18 @@ h2 { font-size: 1.15rem; font-weight: 700; }
         <button class="serve-btn need-tap" id="srv-p" onclick="setServer('P')"></button>
         <button class="serve-btn need-tap" id="srv-o" onclick="setServer('O')"></button>
       </div>
-      <div class="col-label" style="margin-top:6px">Side</div>
+      <div class="col-label" style="margin-top:4px">Side</div>
       <div class="side-btns">
         <button class="side-btn need-tap" id="side-d" onclick="setSide('Deuce')">Deuce</button>
         <button class="side-btn need-tap" id="side-a" onclick="setSide('Ad')">Ad</button>
       </div>
-      <div class="form-row" style="margin-top:6px">
-        <div class="form-label">Set</div>
-        <select id="set-sel" onchange="setState(this.value)">
-          <option value="1st set">1st set</option>
-          <option value="2nd set">2nd set</option>
-          <option value="3rd set">3rd set</option>
-          <option value="Match-tiebreaker">Match-tiebreaker</option>
-        </select>
-      </div>
+      <div class="col-label" style="margin-top:4px">Set</div>
+      <select id="set-sel" onchange="setState(this.value)" style="padding:7px 6px;border-radius:8px;background:var(--bg3);color:var(--fg);border:2px solid var(--border);font-size:13px;font-weight:600;width:100%">
+        <option value="1st set">1st set</option>
+        <option value="2nd set">2nd set</option>
+        <option value="3rd set">3rd set</option>
+        <option value="Match-tiebreaker">Match-TB</option>
+      </select>
     </div>
 
     <!-- MIDDLE COL -->
@@ -452,9 +465,11 @@ h2 { font-size: 1.15rem; font-weight: 700; }
           <button class="smod-btn ace-btn" id="smod-2a" disabled onclick="servemod('2ace')">2nd ACE</button>
         </div>
       </div>
-      <div class="col-label" style="margin-top:4px">Point so far</div>
-      <div class="psf-strip" id="psf-strip">
-        <span style="color:var(--fg2);font-size:12px">—</span>
+      <div class="psf-row">
+        <span class="psf-label">Point so far</span>
+        <div class="psf-strip" id="psf-strip">
+          <span style="color:var(--fg2);font-size:12px">—</span>
+        </div>
       </div>
       <div class="shot-btns" id="shot-area">
         <!-- normal FH/BH shown by default; replaced by ace-dir when ACE selected -->
@@ -557,6 +572,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 let match = {
   playerName: '',
   opp: '', tourn: '', env: '', surface: '', sets: '',
+  date: '',
   points: []
 };
 
@@ -671,6 +687,7 @@ function checkStartEnabled() {
 function startMatch() {
   match.playerName = document.getElementById('s-player').value.trim();
   match.opp   = document.getElementById('s-opp').value.trim();
+  match.date  = document.getElementById('s-date').value;
   match.tourn = document.getElementById('s-tourn').value.trim();
   match.env   = setupVals.env;
   match.surface = setupVals.surf;
@@ -811,9 +828,11 @@ function servemod(action) {
   } else if (action === '2fault') {
     document.getElementById('smod-2f').classList.add('sel');
     cur.outcome = 'Double fault';
+    // Disable shot buttons — DF means play is over
+    setShotLock(true);
     updatePSF();
-    const winner = cur.server === 'P' ? 'O' : 'P';
-    logPoint(winner);
+    // Enable Point Finished so user confirms (no auto-log)
+    document.getElementById('finish-btn').disabled = false;
 
   } else if (action === '1ace') {
     document.getElementById('smod-1a').classList.add('sel');
@@ -908,7 +927,7 @@ function updatePSF() {
 function updateFinishBtn() {
   const isAce = cur.outcome === '1st ACE' || cur.outcome === '2nd ACE';
   const isDF  = cur.outcome === 'Double fault';
-  if (isDF) { document.getElementById('finish-btn').disabled = true; return; }
+  if (isDF) { document.getElementById('finish-btn').disabled = false; return; }
   if (isAce) {
     document.getElementById('finish-btn').disabled = !cur.aceDir;
     return;
@@ -919,8 +938,14 @@ function updateFinishBtn() {
 
 function pointFinished() {
   const isAce = cur.outcome === '1st ACE' || cur.outcome === '2nd ACE';
+  const isDF  = cur.outcome === 'Double fault';
   if (isAce) {
     logPoint(cur.server); // server wins ace
+  } else if (isDF) {
+    // Returner wins DF — go to Who Won with returner pre-highlighted
+    const dfWinner = cur.server === 'P' ? 'O' : 'P';
+    goScreen('whowon');
+    selectWinner(dfWinner);
   } else {
     cur.lastShot = '';
     document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
@@ -955,6 +980,10 @@ function logPoint(winnerCode) {
   const serverName = cur.server === 'P' ? match.playerName : match.opp;
 
   const row = {
+    Date: match.date || '',
+    Tournament: match.tourn || '',
+    Surface: match.surface || '',
+    Environment: match.env || '',
     Set: cur.set,
     Server: serverName,
     Side: cur.side,
@@ -1201,7 +1230,8 @@ function renderEndMatch() {
 }
 
 function downloadCSV() {
-  const cols = ['Set','Server','Side','Serve outcome','ACE direction',
+  const cols = ['Date','Tournament','Surface','Environment',
+                'Set','Server','Side','Serve outcome','ACE direction',
                 'Return','Serve+1','Return+1','Serve+2','Last shot','Winner'];
   const header = cols.join(',');
   const rows = match.points.map(pt => {
@@ -1215,7 +1245,7 @@ function downloadCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const fname = `${match.playerName}_${match.opp}_${match.tourn || 'match'}.csv`
+  const fname = `${match.playerName}_${match.opp}_${match.date || match.tourn || 'match'}.csv`
     .replace(/[^a-z0-9_\-\.]/gi,'_');
   a.download = fname;
   a.click();
