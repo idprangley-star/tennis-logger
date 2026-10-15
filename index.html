@@ -308,20 +308,49 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 }
 .tls-btn.sel { border-color: var(--purple); color: var(--fg); background: var(--bg2); }
 
-/* Fault direction buttons */
+/* Fault direction buttons (in shot area, like ace-dir) */
+.fdir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .fdir-btn {
-  padding: 5px 7px; border-radius: 6px; font-size: 10px; font-weight: 600;
-  background: var(--bg3); color: var(--fg2); border: 2px solid transparent;
+  padding: 14px 8px; border-radius: 12px;
+  font-size: 12px; font-weight: 700;
+  background: var(--bg3); color: var(--fg2);
+  border: 2px solid var(--border);
+  width: 100%; text-align: center;
 }
-.fdir-btn.sel { border-color: var(--amber); color: var(--fg); background: var(--bg2); }
+.fdir-btn.sel { background: var(--amber); color: #fff; border-color: var(--amber); }
+
+/* lsnext screen */
+#lsnext.active {
+  display: grid !important;
+  grid-template-columns: 95px 1fr;
+  height: 100vh; overflow: hidden;
+  gap: 0; padding: 0;
+}
+.lsnext-left {
+  display: flex; flex-direction: column; gap: 8px; padding: 10px 8px;
+  border-right: 1px solid var(--border);
+}
+.lsnext-right {
+  display: flex; flex-direction: column; gap: 8px; padding: 10px 10px;
+  overflow-y: auto;
+}
+.lsnext-title {
+  font-size: 10px; font-weight: 700; color: var(--fg2);
+  text-transform: uppercase; letter-spacing: .08em;
+  padding-bottom: 2px;
+}
+.lsnext-shot {
+  font-size: 15px; font-weight: 800; color: var(--fg); margin-bottom: 4px;
+}
 
 /* Last shot direction buttons */
 .lsdir-btn {
-  padding: 6px 9px; border-radius: 7px; font-size: 11px; font-weight: 600;
-  background: var(--bg3); color: var(--fg2); border: 2px solid transparent;
+  padding: 12px 8px; border-radius: 10px; font-size: 13px; font-weight: 700;
+  background: var(--bg3); color: var(--fg2); border: 2px solid var(--border);
+  flex: 1;
 }
-.lsdir-btn.sel { border-color: var(--accent); color: var(--fg); background: var(--bg2); }
-.lsdir-btn.outcome-btn.sel { border-color: var(--red); color: var(--fg); }
+.lsdir-btn.sel { border-color: var(--accent); background: var(--bg2); color: var(--fg); }
+.lsdir-btn.outcome-btn.sel { border-color: var(--red); background: #3d1515; color: #fca5a5; }
 
 /* Score analysis table */
 .score-sit-grid {
@@ -518,19 +547,6 @@ h2 { font-size: 1.15rem; font-weight: 700; }
           <button class="smod-btn ace-btn" id="smod-2a" disabled onclick="servemod('2ace')">2nd ACE</button>
         </div>
       </div>
-      <div id="fault-dir-area" style="display:none;margin-top:5px">
-        <div class="ls-section-label" style="margin-bottom:3px">Fault placement</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px">
-          <button class="fdir-btn" onclick="toggleFaultDir('Wide wide',this)">Wide W</button>
-          <button class="fdir-btn" onclick="toggleFaultDir('Wide long',this)">Wide L</button>
-          <button class="fdir-btn" onclick="toggleFaultDir('Wide net',this)">Wide N</button>
-          <button class="fdir-btn" onclick="toggleFaultDir('T wide',this)">T W</button>
-          <button class="fdir-btn" onclick="toggleFaultDir('T long',this)">T L</button>
-          <button class="fdir-btn" onclick="toggleFaultDir('T net',this)">T N</button>
-          <button class="fdir-btn" onclick="toggleFaultDir('Body long',this)">Body L</button>
-          <button class="fdir-btn" onclick="toggleFaultDir('Body net',this)">Body N</button>
-        </div>
-      </div>
       <div class="psf-row">
         <span class="psf-label">Point so far</span>
         <div class="psf-strip" id="psf-strip">
@@ -557,6 +573,18 @@ h2 { font-size: 1.15rem; font-weight: 700; }
             <button class="ace-dir-other" id="acd-other" onclick="setAceDir('Other')">Other (net cord, unusual…)</button>
           </div>
         </div>
+        <div id="fault-dir-area" style="display:none;width:100%">
+          <div class="fdir-grid">
+            <button class="fdir-btn" onclick="toggleFaultDir('Wide wide',this)">Wide wide</button>
+            <button class="fdir-btn" onclick="toggleFaultDir('T wide',this)">T wide</button>
+            <button class="fdir-btn" onclick="toggleFaultDir('Wide long',this)">Wide long</button>
+            <button class="fdir-btn" onclick="toggleFaultDir('T long',this)">T long</button>
+            <button class="fdir-btn" onclick="toggleFaultDir('Wide net',this)">Wide net</button>
+            <button class="fdir-btn" onclick="toggleFaultDir('T net',this)">T net</button>
+            <button class="fdir-btn" onclick="toggleFaultDir('Body long',this)">Body long</button>
+            <button class="fdir-btn" onclick="toggleFaultDir('Body net',this)">Body net</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -579,32 +607,51 @@ h2 { font-size: 1.15rem; font-weight: 700; }
     <button class="ww-confirm" id="ww-confirm" onclick="commitPoint()" disabled>Log Point →</button>
   </div>
   <div class="ww-right">
-    <div class="ls-section-label">2nd last — optional</div>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;margin-top:3px">
-      <button class="tls-btn" onclick="toggle2ndLast('FH',this)">FH</button>
-      <button class="tls-btn" onclick="toggle2ndLast('BH',this)">BH</button>
-      <button class="tls-btn" onclick="toggle2ndLast('FH volley',this)">FH Vol</button>
-      <button class="tls-btn" onclick="toggle2ndLast('BH volley',this)">BH Vol</button>
-      <button class="tls-btn" onclick="toggle2ndLast('Smash',this)">Smash</button>
-    </div>
     <div class="ls-section-label">Last shot — optional</div>
     <div class="ls-section-label" style="color:#16a34a;margin-top:4px">Winners</div>
     <div class="ls-grid" id="ls-winners"></div>
     <div class="ls-section-label" style="color:#dc2626;margin-top:6px">Errors</div>
     <div class="ls-grid" id="ls-errors"></div>
-    <div id="ls-dir-area" style="display:none;margin-top:6px">
-      <div class="ls-section-label" id="ls-dir-label" style="margin-bottom:3px">Direction — optional</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px" id="ls-dir-cat-row">
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!--  LAST SHOT NEXT SCREEN (direction / forcing shot)   -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="lsnext" class="screen">
+  <div class="lsnext-left">
+    <button class="ww-confirm" style="flex:none;padding:12px;font-size:14px" onclick="backFromLsNext()">← Back</button>
+    <div style="flex:1"></div>
+    <button class="ww-confirm" id="lsnext-log-btn" onclick="commitPoint()">Log<br>Point →</button>
+  </div>
+  <div class="lsnext-right">
+    <div class="lsnext-title" id="lsnext-title">Direction — optional</div>
+    <div class="lsnext-shot" id="lsnext-shot"></div>
+
+    <!-- Direction section (winner / unforced error) -->
+    <div id="lsnext-dir-section">
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="ls-dir-cat-row">
         <button class="lsdir-btn" onclick="toggleShotDirCat('Line',this)">Line</button>
         <button class="lsdir-btn" onclick="toggleShotDirCat('Cross',this)">Cross</button>
         <button class="lsdir-btn" onclick="toggleShotDirCat('Inside in',this)">In-in</button>
         <button class="lsdir-btn" onclick="toggleShotDirCat('Inside out',this)">In-out</button>
         <button class="lsdir-btn" id="ls-dir-middle" onclick="toggleShotDirCat('Middle',this)">Middle</button>
       </div>
-      <div id="ls-dir-out-row" style="display:none;flex-wrap:wrap;gap:4px;margin-top:4px">
+      <div id="ls-dir-out-row" style="display:none;flex-wrap:wrap;gap:6px;margin-top:6px">
         <button class="lsdir-btn outcome-btn" onclick="toggleShotDirOut('net',this)">Net</button>
         <button class="lsdir-btn outcome-btn" onclick="toggleShotDirOut('long',this)">Long</button>
         <button class="lsdir-btn outcome-btn" onclick="toggleShotDirOut('wide',this)">Wide</button>
+      </div>
+    </div>
+
+    <!-- 2nd-last section (forced error) -->
+    <div id="lsnext-2ndlast-section" style="display:none">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="tls-btn" onclick="toggle2ndLast('FH',this)">FH</button>
+        <button class="tls-btn" onclick="toggle2ndLast('BH',this)">BH</button>
+        <button class="tls-btn" onclick="toggle2ndLast('FH volley',this)">FH Vol</button>
+        <button class="tls-btn" onclick="toggle2ndLast('BH volley',this)">BH Vol</button>
+        <button class="tls-btn" onclick="toggle2ndLast('Smash',this)">Smash</button>
       </div>
     </div>
   </div>
@@ -740,25 +787,18 @@ function toggleFaultDir(val, btn) {
 }
 
 function toggleLastShot(val, btn) {
-  const same = cur.lastShot === val;
-  cur.lastShot = same ? '' : val;
-  document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
-  if (cur.lastShot) btn.classList.add('sel');
+  cur.lastShot = val;
+  goScreen('lsnext');
+}
 
-  // Reset direction when shot type changes
+function backFromLsNext() {
+  cur.lastShot = '';
   cur.lastShotDir = ''; cur._lsDirCat = ''; cur._lsDirOut = '';
-  document.querySelectorAll('.lsdir-btn').forEach(b => b.classList.remove('sel'));
-
-  if (!cur.lastShot) {
-    document.getElementById('ls-dir-area').style.display = 'none';
-    return;
-  }
-  const isWinner = cur.lastShot.includes('winner');
-  document.getElementById('ls-dir-area').style.display = '';
-  // Middle only relevant for errors
-  document.getElementById('ls-dir-middle').style.display = isWinner ? 'none' : '';
-  // Outcome row (net/long/wide) only for errors
-  document.getElementById('ls-dir-out-row').style.display = 'none';
+  cur.twoLastShot = '';
+  // Go back to whowon, restore who-won selection without resetting it
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('whowon').classList.add('active');
+  document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
 }
 
 function toggleShotDirCat(val, btn) {
@@ -805,11 +845,25 @@ function goScreen(id) {
       b.classList.remove('ww-sel','ww-dim');
     });
     document.getElementById('ww-confirm').disabled = true;
-    document.querySelectorAll('.tls-btn').forEach(b => b.classList.remove('sel'));
-    cur.twoLastShot = '';
-    document.getElementById('ls-dir-area').style.display = 'none';
-    document.querySelectorAll('.lsdir-btn').forEach(b => b.classList.remove('sel'));
+    document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
+    cur.lastShot = '';
     cur.lastShotDir = ''; cur._lsDirCat = ''; cur._lsDirOut = '';
+    cur.twoLastShot = '';
+  }
+  if (id === 'lsnext') {
+    const isForced = cur.lastShot.includes('forced');
+    const isWinner = cur.lastShot.includes('winner');
+    document.getElementById('lsnext-shot').textContent = cur.lastShot;
+    document.getElementById('lsnext-title').textContent =
+      isForced ? 'Forcing shot — optional' : 'Direction — optional';
+    document.getElementById('lsnext-dir-section').style.display = isForced ? 'none' : '';
+    document.getElementById('lsnext-2ndlast-section').style.display = isForced ? '' : 'none';
+    document.getElementById('ls-dir-middle').style.display = isWinner ? 'none' : '';
+    document.getElementById('ls-dir-out-row').style.display = 'none';
+    document.querySelectorAll('.lsdir-btn').forEach(b => b.classList.remove('sel'));
+    document.querySelectorAll('.tls-btn').forEach(b => b.classList.remove('sel'));
+    cur.lastShotDir = ''; cur._lsDirCat = ''; cur._lsDirOut = '';
+    cur.twoLastShot = '';
   }
 }
 
@@ -903,9 +957,9 @@ function resetPoint() {
     faultDir: '', lastShotDir: '', _lsDirCat: '', _lsDirOut: ''
   };
   document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
-  document.querySelectorAll('.tls-btn').forEach(b => b.classList.remove('sel'));
-  document.getElementById('fault-dir-area').style.display = 'none';
   document.querySelectorAll('.fdir-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('fault-dir-area').style.display = 'none';
+  document.getElementById('fbh-area').style.display = '';
 
   // server buttons: clear selection, re-enable pulse
   ['srv-p','srv-o'].forEach(id => {
@@ -976,6 +1030,8 @@ function setShotLock(locked) {
 }
 
 function showFaultDir(show) {
+  document.getElementById('fbh-area').style.display = show ? 'none' : '';
+  document.getElementById('ace-dir-area').style.display = 'none';
   document.getElementById('fault-dir-area').style.display = show ? '' : 'none';
   if (!show) {
     document.querySelectorAll('.fdir-btn').forEach(b => b.classList.remove('sel'));
@@ -1038,6 +1094,7 @@ function servemod(action) {
 function showAceDir(show) {
   document.getElementById('fbh-area').style.display = show ? 'none' : '';
   document.getElementById('ace-dir-area').style.display = show ? '' : 'none';
+  document.getElementById('fault-dir-area').style.display = 'none';
   if (!show) {
     ['acd-wide','acd-t','acd-other'].forEach(id =>
       document.getElementById(id).classList.remove('sel'));
