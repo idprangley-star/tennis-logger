@@ -340,6 +340,8 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .stat-val { font-size: 18px; font-weight: 800; color: var(--fg); }
 .stat-bar-wrap { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
 .stat-bar { height: 100%; border-radius: 3px; background: var(--accent); transition: width .5s; }
+.stat-card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); margin-bottom: 2px; }
+.stat-sub { font-size: 11px; font-weight: 600; color: var(--fg2); text-transform: uppercase; letter-spacing: .04em; }
 .coaching-card {
   background: linear-gradient(135deg, #1e1b4b, #312e81);
   border: 1px solid #4338ca; border-radius: 14px; padding: 16px;
@@ -544,6 +546,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 <div id="analyse" class="screen">
   <div class="topbar">
     <span class="topbar-title">Live Stats</span>
+    <button class="topbar-btn" onclick="downloadStats()">⬇ Stats</button>
     <button class="topbar-btn" onclick="goScreen('log-screen')">← Back</button>
   </div>
   <div class="analyse-body" id="analyse-body"></div>
@@ -560,8 +563,9 @@ h2 { font-size: 1.15rem; font-weight: 700; }
     <div id="end-win" style="margin-top:8px;font-size:1.1rem;font-weight:700"></div>
   </div>
   <div class="end-btns">
-    <button class="end-btn primary" onclick="goScreen('analyse')">Quick Stats</button>
-    <button class="end-btn secondary" onclick="downloadCSV()">⬇ Download CSV</button>
+    <button class="end-btn primary" onclick="goScreen('analyse')">View Full Stats</button>
+    <button class="end-btn secondary" onclick="downloadCSV()">⬇ Raw Data (xlsx)</button>
+    <button class="end-btn secondary" onclick="downloadStats()">⬇ Match Stats (xlsx)</button>
   </div>
   <button class="end-back" onclick="goScreen('log-screen')">Not finished — back to logging</button>
 </div>
@@ -1116,89 +1120,221 @@ function confirmDelete() {
 // ═══════════════════════════════════════════════════════
 //  ANALYSE
 // ═══════════════════════════════════════════════════════
+function barRow(label, val, denom, color) {
+  const p = pct(val, denom);
+  const col = color || 'var(--accent)';
+  return `<div class="stat-row"><span class="stat-label">${label} (${val}/${denom})</span><span class="stat-val" style="color:${col}">${p}%</span></div><div class="stat-bar-wrap"><div class="stat-bar" style="width:${p}%;background:${col}"></div></div>`;
+}
+function numRow(label, val, color) {
+  return `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-val" style="color:${color||'var(--fg)'}">${val}</span></div>`;
+}
+function countBy(arr, key) {
+  return arr.reduce((acc, item) => {
+    const k = item[key] || '—';
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {});
+}
+
 function renderAnalyse() {
   const body = document.getElementById('analyse-body');
-  const pts = match.points;
-  const playerFullName = match.playerName;
-  const n = pts.length;
-
-  if (n === 0) {
+  const s = computeStats();
+  if (!s) {
     body.innerHTML = '<div style="text-align:center;color:var(--fg2);padding:40px">No points yet.</div>';
     return;
   }
+  const { n, pWon, pS, oS, s1In, s2In, sDFs, sAce, os1In, os2In, oDFs, oAce,
+          netPts, allShots, pSD, pSA, pRD, pRA, ls, bySet, ralLen } = s;
+  const P = match.playerName || 'Player';
+  const O = match.opp || 'Opponent';
+  const oWon = n - pWon;
 
-  const won = pts.filter(p => p._winCode === 'P').length;
-  const pWon = pct(won, n);
+  // Shot distribution helpers
+  const FH_SHOTS = ['FH','FH slice'];
+  const BH_SHOTS = ['BH','BH slice'];
+  const NET_SHOTS = ['FH volley','BH volley','Smash'];
+  const fhCount = allShots.filter(sh => FH_SHOTS.includes(sh)).length;
+  const bhCount = allShots.filter(sh => BH_SHOTS.includes(sh)).length;
+  const netCount = allShots.filter(sh => NET_SHOTS.includes(sh)).length;
+  const totalShots = allShots.length;
 
-  // 1st serve stats
-  const has1st = pts.filter(p =>
-    p['Serve outcome']==='1st in' || p['Serve outcome']==='1st ACE');
-  const tot1st = pts.filter(p => p._serverCode === 'P').length;
-  const p1stIn = pts.filter(p => p._serverCode==='P' &&
-    (p['Serve outcome']==='1st in' || p['Serve outcome']==='1st ACE')).length;
-  const p1stPct = pct(p1stIn, tot1st);
+  // Net approach win %
+  const netWon = netPts.filter(pt => pt._winCode==='P').length;
 
-  // serve win %
-  const pServing = pts.filter(p => p._serverCode === 'P');
-  const pServeWon = pServing.filter(p => p._winCode === 'P').length;
-  const pServePct = pct(pServeWon, pServing.length);
+  // Serve+1 (player's shot after 1st serve goes in)
+  const sp1pts = pS.filter(pt => pt['Serve+1']);
+  const sp1ByShot = countBy(sp1pts, 'Serve+1');
 
-  // return win %
-  const pReturning = pts.filter(p => p._serverCode === 'O');
-  const pRetWon = pReturning.filter(p => p._winCode === 'P').length;
-  const pRetPct = pct(pRetWon, pReturning.length);
+  // Return+1 (player's shot after receiving)
+  const rp1pts = oS.filter(pt => pt['Return+1']);
+  const rp1ByShot = countBy(rp1pts, 'Return+1');
 
-  // DFs
-  const pDFs = pts.filter(p => p._serverCode==='P' && p['Serve outcome']==='Double fault').length;
+  // Last shot analysis
+  const lsWinnerPts  = ls.filter(pt => pt['Last shot'].includes('winner') && pt._winCode==='P');
+  const lsOppErrPts  = ls.filter(pt => pt['Last shot'].includes('error')  && pt._winCode==='P');
+  const lsOppWinPts  = ls.filter(pt => pt['Last shot'].includes('winner') && pt._winCode==='O');
+  const lsPlayerErrPts = ls.filter(pt => pt['Last shot'].includes('error') && pt._winCode==='O');
 
-  // coaching point
-  const coaching = getCoachingPoint(pts, playerFullName);
+  // Rally length proxy
+  const serveEnd   = pS.filter(pt => ralLen(pt) === 0).length;
+  const shortRally = pS.filter(pt => ralLen(pt) >= 1 && ralLen(pt) <= 2).length;
+  const longRally  = pS.filter(pt => ralLen(pt) >= 3).length;
+  const rTotal = pS.length;
 
-  body.innerHTML = `
-    <div class="stat-card">
-      <div class="stat-row">
-        <span class="stat-label">Points won (${won}/${n})</span>
-        <span class="stat-val">${pWon}%</span>
-      </div>
-      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${pWon}%"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-row">
-        <span class="stat-label">1st serve in (${p1stIn}/${tot1st})</span>
-        <span class="stat-val">${p1stPct}%</span>
-      </div>
-      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${p1stPct}%"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-row">
-        <span class="stat-label">Serve win % (${pServeWon}/${pServing.length})</span>
-        <span class="stat-val">${pServePct}%</span>
-      </div>
-      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${pServePct}%"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-row">
-        <span class="stat-label">Return win % (${pRetWon}/${pReturning.length})</span>
-        <span class="stat-val">${pRetPct}%</span>
-      </div>
-      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${pRetPct}%"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-row">
-        <span class="stat-label">Double faults</span>
-        <span class="stat-val" style="color:var(--red)">${pDFs}</span>
-      </div>
-    </div>
-    <div class="coaching-card">
-      <div class="coaching-label">🎯 Coaching point</div>
-      <div class="coaching-text">${coaching}</div>
-    </div>
-  `;
+  // BH / FH return breakdown
+  const fhRet = oS.filter(pt => pt.Return==='FH');
+  const bhRet = oS.filter(pt => pt.Return==='BH');
+  const fhRetWon = fhRet.filter(pt => pt._winCode==='P').length;
+  const bhRetWon = bhRet.filter(pt => pt._winCode==='P').length;
+
+  const coaching = getCoachingPoint(match.points, P);
+
+  let html = '';
+
+  // ── 1. Overall ──
+  html += `<div class="stat-card"><div class="stat-card-title">Overall</div>
+    ${barRow(P+' points won', pWon, n, 'var(--green)')}
+    ${barRow(O+' points won', oWon, n, 'var(--red)')}
+  </div>`;
+
+  // ── 2. Player Serve ──
+  const s1WonPts = s1In.filter(pt => pt._winCode==='P').length;
+  const s2WonPts = s2In.filter(pt => pt._winCode==='P').length;
+  const sAllWon  = pS.filter(pt => pt._winCode==='P').length;
+  html += `<div class="stat-card"><div class="stat-card-title">${P} — Serve</div>
+    ${barRow('1st serve in', s1In.length, pS.length)}
+    ${barRow('1st serve win %', s1WonPts, s1In.length)}
+    ${barRow('2nd serve win %', s2WonPts, s2In.length)}
+    ${barRow('Overall serve win %', sAllWon, pS.length, 'var(--accent)')}
+    ${numRow('Aces', sAce.length, 'var(--green)')}
+    ${numRow('Double faults', sDFs.length, 'var(--red)')}
+  </div>`;
+
+  // ── 3. Serve by Court Side ──
+  const pSDWon = pSD.filter(pt=>pt._winCode==='P').length;
+  const pSAWon = pSA.filter(pt=>pt._winCode==='P').length;
+  html += `<div class="stat-card"><div class="stat-card-title">${P} — Serve by Court</div>
+    ${barRow('Deuce serve win %', pSDWon, pSD.length)}
+    ${barRow('Ad serve win %', pSAWon, pSA.length)}
+  </div>`;
+
+  // ── 4. Opponent Serve (return performance) ──
+  const os1WonPts = os1In.filter(pt=>pt._winCode==='P').length;
+  const oAllWon   = oS.filter(pt=>pt._winCode==='P').length;
+  const pRDWon = pRD.filter(pt=>pt._winCode==='P').length;
+  const pRAWon = pRA.filter(pt=>pt._winCode==='P').length;
+  html += `<div class="stat-card"><div class="stat-card-title">${P} — Return</div>
+    ${barRow('Return win %', oAllWon, oS.length, 'var(--green)')}
+    ${barRow('vs 1st serve win %', os1WonPts, os1In.length)}
+    ${barRow('vs 2nd serve win %', oS.filter(pt=>['2nd in','2nd ACE'].includes(pt['Serve outcome'])&&pt._winCode==='P').length, os2In.length)}
+    ${barRow('Deuce return win %', pRDWon, pRD.length)}
+    ${barRow('Ad return win %', pRAWon, pRA.length)}
+    ${barRow('FH return win %', fhRetWon, fhRet.length)}
+    ${barRow('BH return win %', bhRetWon, bhRet.length)}
+  </div>`;
+
+  // ── 5. Shot Distribution ──
+  html += `<div class="stat-card"><div class="stat-card-title">Shot Distribution (all rally shots)</div>
+    ${numRow('Total shots logged', totalShots)}
+    ${barRow('Forehand (FH)', fhCount, totalShots)}
+    ${barRow('Backhand (BH)', bhCount, totalShots)}
+    ${barRow('Net shots', netCount, totalShots, 'var(--purple)')}
+  </div>`;
+
+  // ── 6. Net Approach ──
+  html += `<div class="stat-card"><div class="stat-card-title">Net Approach</div>
+    ${barRow('Points reaching net', netPts.length, n)}
+    ${barRow('Net approach win %', netWon, netPts.length, 'var(--purple)')}
+  </div>`;
+
+  // ── 7. Patterns of Play ──
+  const sp1Keys = Object.keys(sp1ByShot).sort((a,b)=>sp1ByShot[b]-sp1ByShot[a]);
+  const rp1Keys = Object.keys(rp1ByShot).sort((a,b)=>rp1ByShot[b]-rp1ByShot[a]);
+  let patHtml = `<div class="stat-card-title">Patterns of Play</div>`;
+  if (sp1Keys.length) {
+    patHtml += `<div class="stat-sub">Serve+1 (your shot after 1st in)</div>`;
+    sp1Keys.forEach(k => { patHtml += numRow(k, sp1ByShot[k]); });
+  }
+  if (rp1Keys.length) {
+    patHtml += `<div class="stat-sub" style="margin-top:6px">Return+1 (your shot after return)</div>`;
+    rp1Keys.forEach(k => { patHtml += numRow(k, rp1ByShot[k]); });
+  }
+  if (rTotal > 0) {
+    patHtml += `<div class="stat-sub" style="margin-top:6px">Rally length (your serve games)</div>`;
+    patHtml += barRow('Serve ends it (ace/DF)', serveEnd, rTotal);
+    patHtml += barRow('Short rally (1-2 shots)', shortRally, rTotal);
+    patHtml += barRow('Extended (3-4 shots)', longRally, rTotal);
+  }
+  html += `<div class="stat-card">${patHtml}</div>`;
+
+  // ── 8. How Points Ended ──
+  if (ls.length > 0) {
+    const wByShot = countBy(lsWinnerPts, 'Last shot');
+    const eByShot = countBy(lsOppErrPts, 'Last shot');
+    const owByShot= countBy(lsOppWinPts, 'Last shot');
+    const peByShot= countBy(lsPlayerErrPts, 'Last shot');
+    let lsHtml = `<div class="stat-card-title">How Points Ended</div>`;
+    lsHtml += `<div class="stat-sub">${P} winners (${lsWinnerPts.length})</div>`;
+    Object.keys(wByShot).forEach(k => { lsHtml += numRow(k, wByShot[k], 'var(--green)'); });
+    lsHtml += `<div class="stat-sub" style="margin-top:6px">${O} errors → ${P} wins (${lsOppErrPts.length})</div>`;
+    Object.keys(eByShot).forEach(k => { lsHtml += numRow(k, eByShot[k], 'var(--green)'); });
+    lsHtml += `<div class="stat-sub" style="margin-top:6px">${O} winners (${lsOppWinPts.length})</div>`;
+    Object.keys(owByShot).forEach(k => { lsHtml += numRow(k, owByShot[k], 'var(--red)'); });
+    lsHtml += `<div class="stat-sub" style="margin-top:6px">${P} errors (${lsPlayerErrPts.length})</div>`;
+    Object.keys(peByShot).forEach(k => { lsHtml += numRow(k, peByShot[k], 'var(--red)'); });
+    html += `<div class="stat-card">${lsHtml}</div>`;
+  }
+
+  // ── 9. By Set ──
+  if (bySet.length > 1) {
+    let setHtml = `<div class="stat-card-title">By Set</div>`;
+    bySet.forEach(sv => {
+      setHtml += barRow(`Set ${sv.set}`, sv.pWon, sv.n);
+    });
+    html += `<div class="stat-card">${setHtml}</div>`;
+  }
+
+  // ── 10. Coaching Point ──
+  html += `<div class="coaching-card"><div class="coaching-label">🎯 Coaching point</div><div class="coaching-text">${coaching}</div></div>`;
+
+  body.innerHTML = html;
 }
 
 function pct(n, d) {
   if (!d) return 0;
   return Math.round(100 * n / d);
+}
+
+// ═══════════════════════════════════════════════════════
+//  STATS ENGINE
+// ═══════════════════════════════════════════════════════
+function computeStats() {
+  const pts = match.points;
+  const n = pts.length;
+  if (!n) return null;
+  const NET = ['FH volley','BH volley','Smash'];
+  const pS  = pts.filter(pt => pt._serverCode === 'P');
+  const oS  = pts.filter(pt => pt._serverCode === 'O');
+  const s1In  = pS.filter(pt => ['1st in','1st ACE'].includes(pt['Serve outcome']));
+  const s2In  = pS.filter(pt => ['2nd in','2nd ACE'].includes(pt['Serve outcome']));
+  const sDFs  = pS.filter(pt => pt['Serve outcome'] === 'Double fault');
+  const sAce  = pS.filter(pt => pt['Serve outcome'].includes('ACE'));
+  const os1In = oS.filter(pt => ['1st in','1st ACE'].includes(pt['Serve outcome']));
+  const os2In = oS.filter(pt => ['2nd in','2nd ACE'].includes(pt['Serve outcome']));
+  const oDFs  = oS.filter(pt => pt['Serve outcome'] === 'Double fault');
+  const oAce  = oS.filter(pt => pt['Serve outcome'].includes('ACE'));
+  const netPts   = pts.filter(pt => NET.some(s => [pt.Return,pt['Serve+1'],pt['Return+1'],pt['Serve+2']].includes(s)));
+  const allShots = pts.flatMap(pt => [pt.Return,pt['Serve+1'],pt['Return+1'],pt['Serve+2']].filter(Boolean));
+  const pSD = pS.filter(pt => pt.Side==='Deuce'), pSA = pS.filter(pt => pt.Side==='Ad');
+  const pRD = oS.filter(pt => pt.Side==='Deuce'), pRA = oS.filter(pt => pt.Side==='Ad');
+  const ls  = pts.filter(pt => pt['Last shot']);
+  const ralLen = pt => [pt.Return,pt['Serve+1'],pt['Return+1'],pt['Serve+2']].filter(Boolean).length;
+  const sets  = [...new Set(pts.map(pt => pt.Set))];
+  const bySet = sets.map(sv => {
+    const sp = pts.filter(pt => pt.Set === sv);
+    return { set: sv, n: sp.length, pWon: sp.filter(pt => pt._winCode==='P').length };
+  });
+  return { n, pWon: pts.filter(pt=>pt._winCode==='P').length, pS, oS, s1In, s2In, sDFs, sAce, os1In, os2In, oDFs, oAce, netPts, allShots, pSD, pSA, pRD, pRA, ls, bySet, ralLen };
 }
 
 function getCoachingPoint(pts, playerName) {
@@ -1269,6 +1405,160 @@ function downloadCSV() {
   XLSX.utils.book_append_sheet(wb, ws2, 'Points');
 
   const fname = `${match.playerName}_${match.opp}_${match.date || match.tourn || 'match'}.xlsx`
+    .replace(/[^a-z0-9_\-\.]/gi,'_');
+  XLSX.writeFile(wb, fname);
+}
+
+function downloadStats() {
+  const s = computeStats();
+  if (!s) { alert('No points logged yet.'); return; }
+  const { n, pWon, pS, oS, s1In, s2In, sDFs, sAce, os1In, os2In, oDFs, oAce,
+          netPts, allShots, pSD, pSA, pRD, pRA, ls, bySet, ralLen } = s;
+  const P = match.playerName || 'Player';
+  const O = match.opp || 'Opponent';
+  const oWon = n - pWon;
+
+  const wb = XLSX.utils.book_new();
+  const makeSheet = rows => XLSX.utils.aoa_to_sheet(rows);
+
+  // ── Sheet 1: Match Info ──
+  const ws1 = makeSheet([
+    ['Field','Value'],
+    ['Player', P],
+    ['Opponent', O],
+    ['Date', match.date],
+    ['Tournament', match.tourn],
+    ['Surface', match.surface],
+    ['Environment', match.env],
+    ['Total points', n],
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws1, 'Match Info');
+
+  // ── Sheet 2: Summary ──
+  const ws2 = makeSheet([
+    ['Stat', P, O],
+    ['Points won', pWon, oWon],
+    ['Points won %', pct(pWon,n), pct(oWon,n)],
+    ['Serve games played', pS.length, oS.length],
+    ['Serve win %', pct(pS.filter(pt=>pt._winCode==='P').length, pS.length), pct(oS.filter(pt=>pt._winCode==='O').length, oS.length)],
+    ['Return win %', pct(oS.filter(pt=>pt._winCode==='P').length, oS.length), pct(pS.filter(pt=>pt._winCode==='O').length, pS.length)],
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
+
+  // ── Sheet 3: Serve Stats ──
+  const s1WonP = s1In.filter(pt=>pt._winCode==='P').length;
+  const s2WonP = s2In.filter(pt=>pt._winCode==='P').length;
+  const os1WonO = os1In.filter(pt=>pt._winCode==='O').length;
+  const os2WonO = os2In.filter(pt=>pt._winCode==='O').length;
+  const pSDWon = pSD.filter(pt=>pt._winCode==='P').length;
+  const pSAWon = pSA.filter(pt=>pt._winCode==='P').length;
+  const oSDWon = oS.filter(pt=>pt.Side==='Deuce'&&pt._winCode==='O').length;
+  const oSAWon = oS.filter(pt=>pt.Side==='Ad'&&pt._winCode==='O').length;
+  const ws3 = makeSheet([
+    ['Stat', P, O],
+    ['1st serve in', s1In.length, os1In.length],
+    ['1st serve in %', pct(s1In.length, pS.length), pct(os1In.length, oS.length)],
+    ['1st serve win %', pct(s1WonP, s1In.length), pct(os1WonO, os1In.length)],
+    ['2nd serve in', s2In.length, os2In.length],
+    ['2nd serve win %', pct(s2WonP, s2In.length), pct(os2WonO, os2In.length)],
+    ['Overall serve win %', pct(pS.filter(pt=>pt._winCode==='P').length, pS.length), pct(oS.filter(pt=>pt._winCode==='O').length, oS.length)],
+    ['Aces', sAce.length, oAce.length],
+    ['Double faults', sDFs.length, oDFs.length],
+    ['Deuce serve win %', pct(pSDWon, pSD.length), pct(oSDWon, oS.filter(pt=>pt.Side==='Deuce').length)],
+    ['Ad serve win %', pct(pSAWon, pSA.length), pct(oSAWon, oS.filter(pt=>pt.Side==='Ad').length)],
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws3, 'Serve Stats');
+
+  // ── Sheet 4: Return Stats ──
+  const fhRet = oS.filter(pt=>pt.Return==='FH');
+  const bhRet = oS.filter(pt=>pt.Return==='BH');
+  const fhRetWon = fhRet.filter(pt=>pt._winCode==='P').length;
+  const bhRetWon = bhRet.filter(pt=>pt._winCode==='P').length;
+  const pRDWon = pRD.filter(pt=>pt._winCode==='P').length;
+  const pRAWon = pRA.filter(pt=>pt._winCode==='P').length;
+  const oRet = pS.filter(pt=>pt.Return);
+  const oFHRet = pS.filter(pt=>pt.Return==='FH');
+  const oBHRet = pS.filter(pt=>pt.Return==='BH');
+  const oFHRetWon = oFHRet.filter(pt=>pt._winCode==='O').length;
+  const oBHRetWon = oBHRet.filter(pt=>pt._winCode==='O').length;
+  const ws4 = makeSheet([
+    ['Stat', P, O],
+    ['Return points played', oS.length, pS.length],
+    ['Return win %', pct(oS.filter(pt=>pt._winCode==='P').length, oS.length), pct(pS.filter(pt=>pt._winCode==='O').length, pS.length)],
+    ['vs 1st serve win %', pct(os1In.filter(pt=>pt._winCode==='P').length, os1In.length), pct(s1In.filter(pt=>pt._winCode==='O').length, s1In.length)],
+    ['vs 2nd serve win %', pct(os2In.filter(pt=>pt._winCode==='P').length, os2In.length), pct(s2In.filter(pt=>pt._winCode==='O').length, s2In.length)],
+    ['FH return used', fhRet.length, oFHRet.length],
+    ['FH return win %', pct(fhRetWon, fhRet.length), pct(oFHRetWon, oFHRet.length)],
+    ['BH return used', bhRet.length, oBHRet.length],
+    ['BH return win %', pct(bhRetWon, bhRet.length), pct(oBHRetWon, oBHRet.length)],
+    ['Deuce return win %', pct(pRDWon, pRD.length), ''],
+    ['Ad return win %', pct(pRAWon, pRA.length), ''],
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws4, 'Return Stats');
+
+  // ── Sheet 5: Patterns of Play ──
+  const FH_SH = ['FH','FH slice'], BH_SH = ['BH','BH slice'], NET_SH = ['FH volley','BH volley','Smash'];
+  const fhCount = allShots.filter(sh=>FH_SH.includes(sh)).length;
+  const bhCount = allShots.filter(sh=>BH_SH.includes(sh)).length;
+  const netCount = allShots.filter(sh=>NET_SH.includes(sh)).length;
+  const netWon = netPts.filter(pt=>pt._winCode==='P').length;
+  const sp1pts = pS.filter(pt=>pt['Serve+1']);
+  const rp1pts = oS.filter(pt=>pt['Return+1']);
+  const countBy = (arr, key) => arr.reduce((a,i)=>{const k=i[key]||'—';a[k]=(a[k]||0)+1;return a;},{});
+  const sp1Map = countBy(sp1pts,'Serve+1');
+  const rp1Map = countBy(rp1pts,'Return+1');
+  const serveEnd   = pS.filter(pt=>ralLen(pt)===0).length;
+  const shortRally = pS.filter(pt=>ralLen(pt)>=1&&ralLen(pt)<=2).length;
+  const longRally  = pS.filter(pt=>ralLen(pt)>=3).length;
+  const popRows = [
+    ['Stat', 'Count', '%'],
+    ['Total rally shots logged', allShots.length, ''],
+    ['Forehand shots', fhCount, pct(fhCount, allShots.length)],
+    ['Backhand shots', bhCount, pct(bhCount, allShots.length)],
+    ['Net shots (volley/smash)', netCount, pct(netCount, allShots.length)],
+    ['','',''],
+    ['Net approach points', netPts.length, pct(netPts.length, n)],
+    ['Net approach win %', netWon, pct(netWon, netPts.length)],
+    ['','',''],
+    ['Rally length (serve games)','',''],
+    ['Serve ends it (0 rally shots)', serveEnd, pct(serveEnd, pS.length)],
+    ['Short rally (1-2 shots)', shortRally, pct(shortRally, pS.length)],
+    ['Extended (3-4 shots)', longRally, pct(longRally, pS.length)],
+    ['','',''],
+    ['Serve+1 patterns ('+P+')','',''],
+    ...Object.entries(sp1Map).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v,pct(v,sp1pts.length)]),
+    ['','',''],
+    ['Return+1 patterns ('+P+')','',''],
+    ...Object.entries(rp1Map).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v,pct(v,rp1pts.length)]),
+  ];
+  XLSX.utils.book_append_sheet(wb, makeSheet(popRows), 'Patterns of Play');
+
+  // ── Sheet 6: Last Shot Analysis ──
+  const lsAll = match.points.filter(pt=>pt['Last shot']);
+  const lsWin = lsAll.filter(pt=>pt['Last shot'].includes('winner')&&pt._winCode==='P');
+  const lsOppErr = lsAll.filter(pt=>pt['Last shot'].includes('error')&&pt._winCode==='P');
+  const lsOppWin = lsAll.filter(pt=>pt['Last shot'].includes('winner')&&pt._winCode==='O');
+  const lsPErr = lsAll.filter(pt=>pt['Last shot'].includes('error')&&pt._winCode==='O');
+  const cb2 = (arr,key) => arr.reduce((a,i)=>{const k=i[key]||'—';a[k]=(a[k]||0)+1;return a;},{});
+  const lsRows = [
+    ['Category','Shot','Count'],
+    ...Object.entries(cb2(lsWin,'Last shot')).map(([k,v])=>[P+' winner',k,v]),
+    ...Object.entries(cb2(lsOppErr,'Last shot')).map(([k,v])=>[O+' error → '+P+' wins',k,v]),
+    ...Object.entries(cb2(lsOppWin,'Last shot')).map(([k,v])=>[O+' winner',k,v]),
+    ...Object.entries(cb2(lsPErr,'Last shot')).map(([k,v])=>[P+' error',k,v]),
+  ];
+  XLSX.utils.book_append_sheet(wb, makeSheet(lsRows), 'Last Shot Analysis');
+
+  // ── Sheet 7: Set Breakdown ──
+  if (bySet.length > 0) {
+    const setRows = [
+      ['Set','Points played',P+' won',P+' win %',O+' won',O+' win %'],
+      ...bySet.map(sv=>[sv.set, sv.n, sv.pWon, pct(sv.pWon,sv.n), sv.n-sv.pWon, pct(sv.n-sv.pWon,sv.n)]),
+    ];
+    XLSX.utils.book_append_sheet(wb, makeSheet(setRows), 'Set Breakdown');
+  }
+
+  const fname = `${P}_${O}_${match.date || match.tourn || 'match'}_STATS.xlsx`
     .replace(/[^a-z0-9_\-\.]/gi,'_');
   XLSX.writeFile(wb, fname);
 }
