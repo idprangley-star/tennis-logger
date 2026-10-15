@@ -277,10 +277,10 @@ h2 { font-size: 1.15rem; font-weight: 700; }
   line-height: 1.2; text-align: center;
 }
 .ls-btn.sel { border-color: var(--accent); color: var(--fg); background: var(--bg2); }
-.ls-btn.winner-type { color: #86efac; }
-.ls-btn.error-type { color: #fca5a5; }
-.ls-btn.winner-type.sel { background: #14532d; border-color: var(--green); color: #86efac; }
-.ls-btn.error-type.sel { background: #3d1515; border-color: var(--red); color: #fca5a5; }
+.ls-btn.winner-type { color: #4ade80; }
+.ls-btn.error-type { color: #f87171; }
+.ls-btn.winner-type.sel { background: #14532d; border-color: var(--green); color: #bbf7d0; }
+.ls-btn.error-type.sel { background: #3d1515; border-color: var(--red); color: #fecaca; }
 
 /* ─── POINT LOG SCREEN ───────────────────────────────── */
 #pointlog { padding: 0; }
@@ -358,12 +358,8 @@ h2 { font-size: 1.15rem; font-weight: 700; }
   </div>
   <div class="setup-card" style="margin:0 0 0 0">
     <div class="form-row">
-      <div class="form-label">Player first name</div>
-      <input id="s-first" type="text" placeholder="e.g. Oliver" autocomplete="off">
-    </div>
-    <div class="form-row">
-      <div class="form-label">Player last name</div>
-      <input id="s-last" type="text" placeholder="e.g. Prangley" autocomplete="off">
+      <div class="form-label">Player name</div>
+      <input id="s-player" type="text" placeholder="e.g. Oliver Prangley" autocomplete="off">
     </div>
     <div class="form-row">
       <div class="form-label">Opponent name</div>
@@ -498,9 +494,9 @@ h2 { font-size: 1.15rem; font-weight: 700; }
   </div>
   <div class="ww-right">
     <div class="ls-section-label">Last shot — optional</div>
-    <div class="ls-section-label" style="color:#86efac;margin-top:4px">Winners</div>
+    <div class="ls-section-label" style="color:#4ade80;margin-top:4px">Winners</div>
     <div class="ls-grid" id="ls-winners"></div>
-    <div class="ls-section-label" style="color:#fca5a5;margin-top:6px">Errors</div>
+    <div class="ls-section-label" style="color:#f87171;margin-top:6px">Errors</div>
     <div class="ls-grid" id="ls-errors"></div>
   </div>
 </div>
@@ -554,7 +550,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 //  STATE
 // ═══════════════════════════════════════════════════════
 let match = {
-  playerFirst: '', playerLast: '', playerSurname: '',
+  playerName: '',
   opp: '', tourn: '', env: '', surface: '', sets: '',
   points: []
 };
@@ -572,19 +568,21 @@ let cur = {
 
 const LS_WINNERS = [
   'FH winner','BH winner',
-  'Volley FH winner','Volley BH winner','Smash winner',
   'Return FH winner','Return BH winner',
+  'Volley FH winner','Volley BH winner',
   'Passing FH winner','Passing BH winner',
-  'Lob FH winner','Lob BH winner','Dead net cord winner'
+  'Lob FH winner','Lob BH winner',
+  'Smash winner','Dead net cord winner'
 ];
 const LS_ERRORS = [
   'FH unforced error','BH unforced error',
   'FH forced error','BH forced error',
-  'Volley FH error','Volley BH error','Smash error',
   'Return FH unforced error','Return BH unforced error',
   'Return FH forced error','Return BH forced error',
+  'Volley FH error','Volley BH error',
   'Passing FH unforced error','Passing BH unforced error',
-  'Lob FH error','Lob BH error'
+  'Lob FH error','Lob BH error',
+  'Smash error'
 ];
 
 function buildLastShotGrids() {
@@ -594,7 +592,9 @@ function buildLastShotGrids() {
     shots.forEach(s => {
       const b = document.createElement('button');
       b.className = `ls-btn ${cls}`;
-      b.textContent = s.replace(' winner','').replace(' error','').replace(' unforced','').replace(' forced','');
+      b.textContent = s
+        .replace(' winner','').replace(' unforced error',' UFE').replace(' forced error',' FE')
+        .replace(' error',' E');
       b.title = s;
       b.onclick = () => toggleLastShot(s, b);
       el.appendChild(b);
@@ -647,21 +647,18 @@ function pickOpt(btn) {
 }
 
 function checkStartEnabled() {
-  const f = document.getElementById('s-first').value.trim();
-  const l = document.getElementById('s-last').value.trim();
+  const p = document.getElementById('s-player').value.trim();
   const o = document.getElementById('s-opp').value.trim();
-  const ok = f && l && o && setupVals.env && setupVals.surf && setupVals.sets;
+  const ok = p && o && setupVals.env && setupVals.surf && setupVals.sets;
   document.getElementById('start-btn').disabled = !ok;
 }
 
-['s-first','s-last','s-opp','s-tourn'].forEach(id => {
+['s-player','s-opp','s-tourn'].forEach(id => {
   document.getElementById(id).addEventListener('input', checkStartEnabled);
 });
 
 function startMatch() {
-  match.playerFirst = document.getElementById('s-first').value.trim();
-  match.playerLast  = document.getElementById('s-last').value.trim();
-  match.playerSurname = match.playerLast;
+  match.playerName = document.getElementById('s-player').value.trim();
   match.opp   = document.getElementById('s-opp').value.trim();
   match.tourn = document.getElementById('s-tourn').value.trim();
   match.env   = setupVals.env;
@@ -670,12 +667,12 @@ function startMatch() {
   match.points = [];
 
   // Set server buttons labels
-  document.getElementById('srv-p').textContent = match.playerSurname;
+  document.getElementById('srv-p').textContent = match.playerName;
   document.getElementById('srv-o').textContent = match.opp;
-  document.getElementById('ww-p').textContent  = match.playerSurname;
+  document.getElementById('ww-p').textContent  = match.playerName;
   document.getElementById('ww-o').textContent  = match.opp;
   document.getElementById('topbar-info').textContent =
-    `${match.playerSurname} vs ${match.opp}`;
+    `${match.playerName} vs ${match.opp}`;
 
   buildLastShotGrids();
   resetPoint();
@@ -689,7 +686,7 @@ function loadSavedMatch() {
     if (saved) {
       const d = JSON.parse(saved);
       // only load if same player
-      if (d.playerLast === match.playerLast) {
+      if (d.playerName === match.playerName) {
         if (confirm(`Resume ${d.points.length} saved points?`)) {
           match.points = d.points;
         }
@@ -931,10 +928,8 @@ function commitPoint() {
 const SHOT_SEQUENCE_COLS = ['Return','Serve+1','Return+1','Serve+2'];
 
 function logPoint(winnerCode) {
-  const winnerName = winnerCode === 'P'
-    ? `${match.playerFirst} ${match.playerLast}` : match.opp;
-  const serverName = cur.server === 'P'
-    ? `${match.playerFirst} ${match.playerLast}` : match.opp;
+  const winnerName = winnerCode === 'P' ? match.playerName : match.opp;
+  const serverName = cur.server === 'P' ? match.playerName : match.opp;
 
   const row = {
     Set: cur.set,
@@ -1050,7 +1045,7 @@ function confirmDelete() {
 function renderAnalyse() {
   const body = document.getElementById('analyse-body');
   const pts = match.points;
-  const playerFullName = `${match.playerFirst} ${match.playerLast}`;
+  const playerFullName = match.playerName;
   const n = pts.length;
 
   if (n === 0) {
@@ -1178,7 +1173,7 @@ function renderEndMatch() {
   document.getElementById('end-pts').textContent = n;
   document.getElementById('end-sub').textContent = 'points logged';
   document.getElementById('end-win').textContent = n > 0
-    ? `${match.playerSurname}: ${won} won (${pct(won,n)}%)`
+    ? `${match.playerName}: ${won} won (${pct(won,n)}%)`
     : '';
 }
 
@@ -1197,7 +1192,7 @@ function downloadCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const fname = `${match.playerSurname}_${match.opp}_${match.tourn || 'match'}.csv`
+  const fname = `${match.playerName}_${match.opp}_${match.tourn || 'match'}.csv`
     .replace(/[^a-z0-9_\-\.]/gi,'_');
   a.download = fname;
   a.click();
