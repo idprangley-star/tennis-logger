@@ -633,8 +633,8 @@ h2 { font-size: 1.15rem; font-weight: 700; }
       <div style="display:flex;gap:6px;flex-wrap:wrap" id="ls-dir-cat-row">
         <button class="lsdir-btn" onclick="toggleShotDirCat('Line',this)">Line</button>
         <button class="lsdir-btn" onclick="toggleShotDirCat('Cross',this)">Cross</button>
-        <button class="lsdir-btn" onclick="toggleShotDirCat('Inside in',this)">In-in</button>
-        <button class="lsdir-btn" onclick="toggleShotDirCat('Inside out',this)">In-out</button>
+        <button class="lsdir-btn" onclick="toggleShotDirCat('Inside in',this)">Inside in</button>
+        <button class="lsdir-btn" onclick="toggleShotDirCat('Inside out',this)">Inside out</button>
         <button class="lsdir-btn" id="ls-dir-middle" onclick="toggleShotDirCat('Middle',this)">Middle</button>
       </div>
       <div id="ls-dir-out-row" style="display:none;flex-wrap:wrap;gap:6px;margin-top:6px">
@@ -649,8 +649,8 @@ h2 { font-size: 1.15rem; font-weight: 700; }
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="tls-btn" onclick="toggle2ndLast('FH',this)">FH</button>
         <button class="tls-btn" onclick="toggle2ndLast('BH',this)">BH</button>
-        <button class="tls-btn" onclick="toggle2ndLast('FH volley',this)">FH Vol</button>
-        <button class="tls-btn" onclick="toggle2ndLast('BH volley',this)">BH Vol</button>
+        <button class="tls-btn" onclick="toggle2ndLast('FH volley',this)">FH Volley</button>
+        <button class="tls-btn" onclick="toggle2ndLast('BH volley',this)">BH Volley</button>
         <button class="tls-btn" onclick="toggle2ndLast('Smash',this)">Smash</button>
       </div>
     </div>
@@ -781,9 +781,10 @@ function toggle2ndLast(val, btn) {
 }
 
 function toggleFaultDir(val, btn) {
-  cur.faultDir = cur.faultDir === val ? '' : val;
-  document.querySelectorAll('.fdir-btn').forEach(b => b.classList.remove('sel'));
-  if (cur.faultDir) btn.classList.add('sel');
+  cur.faultDir = val;
+  // Collapse back to normal shot area — keep value in cur.faultDir for logging
+  document.getElementById('fault-dir-area').style.display = 'none';
+  document.getElementById('fbh-area').style.display = '';
 }
 
 function toggleLastShot(val, btn) {
@@ -851,7 +852,7 @@ function goScreen(id) {
     cur.twoLastShot = '';
   }
   if (id === 'lsnext') {
-    const isForced = cur.lastShot.includes('forced');
+    const isForced = cur.lastShot.includes('forced') && !cur.lastShot.startsWith('Return');
     const isWinner = cur.lastShot.includes('winner');
     document.getElementById('lsnext-shot').textContent = cur.lastShot;
     document.getElementById('lsnext-title').textContent =
