@@ -112,19 +112,20 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 }
 
 /* ─── LOG SCREEN (landscape 3-col) ──────────────────── */
-#log-screen { padding: 0; }
+#log-screen { padding: 0; height: 100vh; overflow: hidden; }
 #log-screen .topbar { flex-shrink: 0; }
 .log-body {
-  flex: 1; display: grid;
+  display: grid;
   grid-template-columns: 1fr 1.4fr 1fr;
   gap: 0;
-  min-height: 0;
+  height: calc(100vh - 48px - env(safe-area-inset-top, 0px));
   overflow: hidden;
 }
 .log-col {
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 10px 8px; border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 8px 6px; border-right: 1px solid var(--border);
   overflow-y: auto;
+  overflow-x: hidden;
 }
 .log-col:last-child { border-right: none; }
 .col-label {
@@ -180,11 +181,11 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .psf-pill.bh { background: var(--pill-bh); }
 .psf-pill.net { background: var(--pill-net); }
 
-.shot-btns { display: flex; flex-direction: column; gap: 6px; }
-.fh-bh-row { display: flex; gap: 6px; }
+.shot-btns { display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
+.fh-bh-row { display: flex; gap: 6px; flex: 1; min-height: 0; }
 .fh-btn, .bh-btn {
-  flex: 1; padding: 20px 10px; border-radius: 12px;
-  font-size: 18px; font-weight: 800;
+  flex: 1; min-height: 0; border-radius: 12px;
+  font-size: 24px; font-weight: 800;
 }
 .fh-btn { background: #14532d; color: #86efac; }
 .bh-btn { background: #1e3a6e; color: #93c5fd; }
@@ -234,15 +235,40 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 }
 
 /* ─── WHO WON SCREEN ─────────────────────────────────── */
-#whowon { justify-content: center; align-items: stretch; padding: 16px; gap: 12px; }
-#whowon h2 { text-align: center; font-size: 1.3rem; padding: 8px 0; }
+#whowon {
+  height: 100vh; overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 0; padding: 0;
+}
+.ww-left {
+  display: flex; flex-direction: column; gap: 8px; padding: 10px 8px;
+  border-right: 1px solid var(--border);
+}
+.ww-title { font-size: 12px; font-weight: 700; color: var(--fg2); text-transform: uppercase; letter-spacing: .08em; padding-bottom: 2px; }
 .whowon-btn {
-  flex: 1; border-radius: 16px;
-  font-size: 22px; font-weight: 800;
-  padding: 0 16px;
+  flex: 1; border-radius: 12px;
+  font-size: 20px; font-weight: 800;
+  padding: 0 12px; min-height: 0;
 }
 .whowon-p { background: var(--accent); color: #fff; }
 .whowon-o { background: var(--bg3); color: var(--fg); border: 2px solid var(--border); }
+.ww-right {
+  display: flex; flex-direction: column; gap: 6px; padding: 10px 8px;
+  overflow-y: auto;
+}
+.ls-section-label { font-size: 10px; font-weight: 700; color: var(--fg2); text-transform: uppercase; letter-spacing: .08em; }
+.ls-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.ls-btn {
+  padding: 8px 4px; border-radius: 8px; font-size: 11px; font-weight: 600;
+  background: var(--bg3); color: var(--fg2); border: 2px solid transparent;
+  line-height: 1.2; text-align: center;
+}
+.ls-btn.sel { border-color: var(--accent); color: var(--fg); background: var(--bg2); }
+.ls-btn.winner-type { color: #86efac; }
+.ls-btn.error-type { color: #fca5a5; }
+.ls-btn.winner-type.sel { background: #14532d; border-color: var(--green); color: #86efac; }
+.ls-btn.error-type.sel { background: #3d1515; border-color: var(--red); color: #fca5a5; }
 
 /* ─── POINT LOG SCREEN ───────────────────────────────── */
 #pointlog { padding: 0; }
@@ -419,12 +445,12 @@ h2 { font-size: 1.15rem; font-weight: 700; }
       </div>
       <div class="shot-btns" id="shot-area">
         <!-- normal FH/BH shown by default; replaced by ace-dir when ACE selected -->
-        <div id="fbh-area">
+        <div id="fbh-area" style="display:flex;flex-direction:column;flex:1;min-height:0;gap:6px">
           <div class="fh-bh-row">
             <button class="fh-btn" id="fh-btn" disabled onclick="addShot('FH')">FH</button>
             <button class="bh-btn" id="bh-btn" disabled onclick="addShot('BH')">BH</button>
           </div>
-          <div class="net-row" style="margin-top:6px" id="net-row">
+          <div class="net-row" id="net-row">
             <button class="net-btn" disabled onclick="addShot('FH volley')">FH Vol</button>
             <button class="net-btn" disabled onclick="addShot('Smash')">Smash</button>
             <button class="net-btn" disabled onclick="addShot('BH volley')">BH Vol</button>
@@ -452,9 +478,18 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 <!--  WHO WON SCREEN                                     -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="whowon" class="screen">
-  <h2>Who won the point?</h2>
-  <button class="whowon-btn whowon-p" id="ww-p" onclick="logWinner('P')"></button>
-  <button class="whowon-btn whowon-o" id="ww-o" onclick="logWinner('O')"></button>
+  <div class="ww-left">
+    <div class="ww-title">Who won?</div>
+    <button class="whowon-btn whowon-p" id="ww-p" onclick="logWinner('P')"></button>
+    <button class="whowon-btn whowon-o" id="ww-o" onclick="logWinner('O')"></button>
+  </div>
+  <div class="ww-right">
+    <div class="ls-section-label">Last shot — optional</div>
+    <div class="ls-section-label" style="color:#86efac;margin-top:4px">Winners</div>
+    <div class="ls-grid" id="ls-winners"></div>
+    <div class="ls-section-label" style="color:#fca5a5;margin-top:6px">Errors</div>
+    <div class="ls-grid" id="ls-errors"></div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
@@ -519,7 +554,48 @@ let cur = {
   outcome: '1st in',
   aceDir: null,
   shots: [],
+  lastShot: '',
 };
+
+const LS_WINNERS = [
+  'FH winner','BH winner',
+  'Volley FH winner','Volley BH winner','Smash winner',
+  'Return FH winner','Return BH winner',
+  'Passing FH winner','Passing BH winner',
+  'Lob FH winner','Lob BH winner','Dead net cord winner'
+];
+const LS_ERRORS = [
+  'FH unforced error','BH unforced error',
+  'FH forced error','BH forced error',
+  'Volley FH error','Volley BH error','Smash error',
+  'Return FH unforced error','Return BH unforced error',
+  'Return FH forced error','Return BH forced error',
+  'Passing FH unforced error','Passing BH unforced error',
+  'Lob FH error','Lob BH error'
+];
+
+function buildLastShotGrids() {
+  function makeGrid(containerId, shots, cls) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    shots.forEach(s => {
+      const b = document.createElement('button');
+      b.className = `ls-btn ${cls}`;
+      b.textContent = s.replace(' winner','').replace(' error','').replace(' unforced','').replace(' forced','');
+      b.title = s;
+      b.onclick = () => toggleLastShot(s, b);
+      el.appendChild(b);
+    });
+  }
+  makeGrid('ls-winners', LS_WINNERS, 'winner-type');
+  makeGrid('ls-errors',  LS_ERRORS,  'error-type');
+}
+
+function toggleLastShot(val, btn) {
+  cur.lastShot = cur.lastShot === val ? '' : val;
+  document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
+  if (cur.lastShot) btn.classList.add('sel');
+}
 
 let pendingDeleteIdx = null;
 
@@ -580,6 +656,7 @@ function startMatch() {
   document.getElementById('topbar-info').textContent =
     `${match.playerSurname} vs ${match.opp}`;
 
+  buildLastShotGrids();
   resetPoint();
   goScreen('log-screen');
   loadSavedMatch();
@@ -612,8 +689,9 @@ function resetPoint() {
     server: null, side: null,
     set: document.getElementById('set-sel').value,
     outcome: '1st in',
-    aceDir: null, shots: []
+    aceDir: null, shots: [], lastShot: ''
   };
+  document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
 
   // server buttons: clear selection, re-enable pulse
   ['srv-p','srv-o'].forEach(id => {
@@ -803,7 +881,8 @@ function pointFinished() {
   if (isAce) {
     logPoint(cur.server); // server wins ace
   } else {
-    // show who won screen
+    cur.lastShot = '';
+    document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
     goScreen('whowon');
   }
 }
@@ -831,7 +910,7 @@ function logPoint(winnerCode) {
     'Serve+1': cur.shots[1] || '',
     'Return+1': cur.shots[2] || '',
     'Serve+2': cur.shots[3] || '',
-    'Last shot': '',
+    'Last shot': cur.lastShot || '',
     Winner: winnerName,
     _winCode: winnerCode,
     _serverCode: cur.server
