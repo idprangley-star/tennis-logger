@@ -789,6 +789,13 @@ function toggleFaultDir(val, btn) {
 
 function toggleLastShot(val, btn) {
   cur.lastShot = val;
+  // Return forced errors: serve was the forcing shot — no direction or 2nd-last needed
+  const isReturnForced = val.startsWith('Return') && val.includes(' forced error');
+  if (isReturnForced) {
+    document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+    return;
+  }
   goScreen('lsnext');
 }
 
@@ -852,7 +859,7 @@ function goScreen(id) {
     cur.twoLastShot = '';
   }
   if (id === 'lsnext') {
-    const isForced = cur.lastShot.includes('forced') && !cur.lastShot.startsWith('Return');
+    const isForced = cur.lastShot.includes(' forced error') && !cur.lastShot.startsWith('Return');
     const isWinner = cur.lastShot.includes('winner');
     document.getElementById('lsnext-shot').textContent = cur.lastShot;
     document.getElementById('lsnext-title').textContent =
@@ -1031,10 +1038,14 @@ function setShotLock(locked) {
 }
 
 function showFaultDir(show) {
-  document.getElementById('fbh-area').style.display = show ? 'none' : '';
-  document.getElementById('ace-dir-area').style.display = 'none';
-  document.getElementById('fault-dir-area').style.display = show ? '' : 'none';
-  if (!show) {
+  if (show) {
+    // Fault active: hide FH/BH and ace-dir, show fault-dir
+    document.getElementById('fbh-area').style.display = 'none';
+    document.getElementById('ace-dir-area').style.display = 'none';
+    document.getElementById('fault-dir-area').style.display = '';
+  } else {
+    // Fault cleared: only hide fault-dir; let showAceDir manage the rest
+    document.getElementById('fault-dir-area').style.display = 'none';
     document.querySelectorAll('.fdir-btn').forEach(b => b.classList.remove('sel'));
     cur.faultDir = '';
   }
