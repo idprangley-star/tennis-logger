@@ -340,6 +340,9 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .stat-val { font-size: 18px; font-weight: 800; color: var(--fg); }
 .stat-bar-wrap { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
 .stat-bar { height: 100%; border-radius: 3px; background: var(--accent); transition: width .5s; }
+.hand-toggle { display: flex; gap: 4px; }
+.hand-btn { padding: 5px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg3); color: var(--fg2); font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; }
+.hand-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .stat-card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); margin-bottom: 2px; }
 .stat-sub { font-size: 11px; font-weight: 600; color: var(--fg2); text-transform: uppercase; letter-spacing: .04em; }
 .coaching-card {
@@ -382,9 +385,23 @@ h2 { font-size: 1.15rem; font-weight: 700; }
       <div class="form-label">Player name</div>
       <input id="s-player" type="text" placeholder="e.g. Oliver Prangley" autocomplete="off">
     </div>
+    <div class="form-row" style="align-items:center">
+      <div class="form-label">Player hand</div>
+      <div class="hand-toggle" id="hand-p">
+        <button class="hand-btn active" data-val="R" onclick="setHand('p','R',this)">Right</button>
+        <button class="hand-btn" data-val="L" onclick="setHand('p','L',this)">Left</button>
+      </div>
+    </div>
     <div class="form-row">
       <div class="form-label">Opponent name</div>
       <input id="s-opp" type="text" placeholder="e.g. Smith" autocomplete="off">
+    </div>
+    <div class="form-row" style="align-items:center">
+      <div class="form-label">Opponent hand</div>
+      <div class="hand-toggle" id="hand-o">
+        <button class="hand-btn active" data-val="R" onclick="setHand('o','R',this)">Right</button>
+        <button class="hand-btn" data-val="L" onclick="setHand('o','L',this)">Left</button>
+      </div>
     </div>
     <div class="form-row" style="overflow:hidden">
       <div class="form-label">Date</div>
@@ -577,7 +594,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 let match = {
   playerName: '',
   opp: '', tourn: '', env: '', surface: '', sets: '',
-  date: '',
+  date: '', playerHand: 'R', oppHand: 'R',
   points: []
 };
 
@@ -678,6 +695,13 @@ function pickOpt(btn) {
   checkStartEnabled();
 }
 
+let setupHands = { p: 'R', o: 'R' };
+function setHand(who, val, btn) {
+  setupHands[who] = val;
+  const grp = document.getElementById('hand-' + who);
+  grp.querySelectorAll('.hand-btn').forEach(b => b.classList.toggle('active', b === btn));
+}
+
 function checkStartEnabled() {
   const p = document.getElementById('s-player').value.trim();
   const o = document.getElementById('s-opp').value.trim();
@@ -697,6 +721,8 @@ function startMatch() {
   match.env   = setupVals.env;
   match.surface = setupVals.surf;
   match.sets  = setupVals.sets;
+  match.playerHand = setupHands.p;
+  match.oppHand    = setupHands.o;
   match.points = [];
 
   // Set server buttons labels
@@ -1148,6 +1174,12 @@ function renderAnalyse() {
   const P = match.playerName || 'Player';
   const O = match.opp || 'Opponent';
   const oWon = n - pWon;
+  const pH = match.playerHand || 'R';
+  const oH = match.oppHand || 'R';
+  const pDside = pH==='R' ? 'Deuce (FH)' : 'Deuce (BH)';
+  const pAside = pH==='R' ? 'Ad (BH)' : 'Ad (FH)';
+  const oDside = oH==='R' ? 'Deuce (BH opp)' : 'Deuce (FH opp)';
+  const oAside = oH==='R' ? 'Ad (FH opp)' : 'Ad (BH opp)';
 
   // Shot distribution helpers
   const FH_SHOTS = ['FH','FH slice'];
@@ -1214,8 +1246,8 @@ function renderAnalyse() {
   const pSDWon = pSD.filter(pt=>pt._winCode==='P').length;
   const pSAWon = pSA.filter(pt=>pt._winCode==='P').length;
   html += `<div class="stat-card"><div class="stat-card-title">${P} — Serve by Court</div>
-    ${barRow('Deuce serve win %', pSDWon, pSD.length)}
-    ${barRow('Ad serve win %', pSAWon, pSA.length)}
+    ${barRow(pDside+' serve win %', pSDWon, pSD.length)}
+    ${barRow(pAside+' serve win %', pSAWon, pSA.length)}
   </div>`;
 
   // ── 4. Opponent Serve (return performance) ──
@@ -1227,8 +1259,8 @@ function renderAnalyse() {
     ${barRow('Return win %', oAllWon, oS.length, 'var(--green)')}
     ${barRow('vs 1st serve win %', os1WonPts, os1In.length)}
     ${barRow('vs 2nd serve win %', oS.filter(pt=>['2nd in','2nd ACE'].includes(pt['Serve outcome'])&&pt._winCode==='P').length, os2In.length)}
-    ${barRow('Deuce return win %', pRDWon, pRD.length)}
-    ${barRow('Ad return win %', pRAWon, pRA.length)}
+    ${barRow(oDside+' return win %', pRDWon, pRD.length)}
+    ${barRow(oAside+' return win %', pRAWon, pRA.length)}
     ${barRow('FH return win %', fhRetWon, fhRet.length)}
     ${barRow('BH return win %', bhRetWon, bhRet.length)}
   </div>`;
@@ -1392,8 +1424,9 @@ function downloadCSV() {
 
   // Sheet 1: Match Info — one header row + one data row
   const ws1 = XLSX.utils.aoa_to_sheet([
-    ['Player','Opponent','Date','Tournament','Surface','Environment'],
-    [match.playerName, match.opp, match.date, match.tourn, match.surface, match.env]
+    ['Player','Opponent','Date','Tournament','Surface','Environment','Player hand','Opponent hand'],
+    [match.playerName, match.opp, match.date, match.tourn, match.surface, match.env,
+     match.playerHand==='L'?'Left':'Right', match.oppHand==='L'?'Left':'Right']
   ]);
   XLSX.utils.book_append_sheet(wb, ws1, 'Match Info');
 
@@ -1420,12 +1453,21 @@ function downloadStats() {
 
   const wb = XLSX.utils.book_new();
   const makeSheet = rows => XLSX.utils.aoa_to_sheet(rows);
+  const pH = match.playerHand || 'R';
+  const oH = match.oppHand || 'R';
+  // Deuce/Ad BH side labels based on handedness
+  // Right-hander: BH on Ad side when serving, BH on T-side (Deuce=T=BH) when returning
+  const pServeBHSide = pH==='R' ? 'Ad' : 'Deuce';
+  const pServeFHSide = pH==='R' ? 'Deuce' : 'Ad';
+  const oRetBHSide   = oH==='R' ? 'Deuce (T→BH)' : 'Ad (T→BH)';
 
   // ── Sheet 1: Match Info ──
   const ws1 = makeSheet([
     ['Field','Value'],
     ['Player', P],
+    ['Player handedness', pH==='L'?'Left':'Right'],
     ['Opponent', O],
+    ['Opponent handedness', oH==='L'?'Left':'Right'],
     ['Date', match.date],
     ['Tournament', match.tourn],
     ['Surface', match.surface],
@@ -1464,8 +1506,8 @@ function downloadStats() {
     ['Overall serve win %', pct(pS.filter(pt=>pt._winCode==='P').length, pS.length), pct(oS.filter(pt=>pt._winCode==='O').length, oS.length)],
     ['Aces', sAce.length, oAce.length],
     ['Double faults', sDFs.length, oDFs.length],
-    ['Deuce serve win %', pct(pSDWon, pSD.length), pct(oSDWon, oS.filter(pt=>pt.Side==='Deuce').length)],
-    ['Ad serve win %', pct(pSAWon, pSA.length), pct(oSAWon, oS.filter(pt=>pt.Side==='Ad').length)],
+    [`Deuce serve win % (${pH==='R'?'FH side':'BH side'})`, pct(pSDWon, pSD.length), pct(oSDWon, oS.filter(pt=>pt.Side==='Deuce').length)],
+    [`Ad serve win % (${pH==='R'?'BH side':'FH side'})`, pct(pSAWon, pSA.length), pct(oSAWon, oS.filter(pt=>pt.Side==='Ad').length)],
   ]);
   XLSX.utils.book_append_sheet(wb, ws3, 'Serve Stats');
 
