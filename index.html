@@ -116,7 +116,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 #log-screen .topbar { flex-shrink: 0; }
 .log-body {
   display: grid;
-  grid-template-columns: 1fr 1.4fr 1fr;
+  grid-template-columns: 0.8fr 1.8fr 0.7fr;
   gap: 0;
   height: calc(100vh - 48px - env(safe-area-inset-top, 0px));
   overflow: hidden;
@@ -254,9 +254,17 @@ h2 { font-size: 1.15rem; font-weight: 700; }
   flex: 1; border-radius: 12px;
   font-size: 20px; font-weight: 800;
   padding: 0 12px; min-height: 0;
+  background: var(--bg3); color: var(--fg); border: 2px solid var(--border);
 }
-.whowon-p { background: var(--accent); color: #fff; }
-.whowon-o { background: var(--bg3); color: var(--fg); border: 2px solid var(--border); }
+.whowon-btn.ww-sel { background: var(--green); color: #fff; border-color: var(--green); }
+.whowon-btn.ww-dim { opacity: 0.35; }
+.ww-confirm {
+  flex: none; padding: 14px 12px; border-radius: 12px;
+  background: var(--accent); color: #fff;
+  font-size: 17px; font-weight: 800; width: 100%;
+  border: none;
+}
+.ww-confirm:disabled { background: var(--bg3); color: var(--fg2); }
 .ww-right {
   display: flex; flex-direction: column; gap: 6px; padding: 10px 8px;
   overflow-y: auto;
@@ -484,8 +492,9 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 <div id="whowon" class="screen">
   <div class="ww-left">
     <div class="ww-title">Who won?</div>
-    <button class="whowon-btn whowon-p" id="ww-p" onclick="logWinner('P')"></button>
-    <button class="whowon-btn whowon-o" id="ww-o" onclick="logWinner('O')"></button>
+    <button class="whowon-btn" id="ww-p" onclick="selectWinner('P')"></button>
+    <button class="whowon-btn" id="ww-o" onclick="selectWinner('O')"></button>
+    <button class="ww-confirm" id="ww-confirm" onclick="commitPoint()" disabled>Log Point →</button>
   </div>
   <div class="ww-right">
     <div class="ls-section-label">Last shot — optional</div>
@@ -612,6 +621,14 @@ function goScreen(id) {
   if (id === 'pointlog') renderLog();
   if (id === 'analyse') renderAnalyse();
   if (id === 'endmatch') renderEndMatch();
+  if (id === 'whowon') {
+    pendingWinner = null;
+    ['ww-p','ww-o'].forEach(bid => {
+      const b = document.getElementById(bid);
+      b.classList.remove('ww-sel','ww-dim');
+    });
+    document.getElementById('ww-confirm').disabled = true;
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -891,8 +908,23 @@ function pointFinished() {
   }
 }
 
-function logWinner(who) {
-  logPoint(who);
+let pendingWinner = null;
+
+function selectWinner(who) {
+  pendingWinner = who;
+  const pBtn = document.getElementById('ww-p');
+  const oBtn = document.getElementById('ww-o');
+  const confirmBtn = document.getElementById('ww-confirm');
+  pBtn.classList.toggle('ww-sel', who === 'P');
+  pBtn.classList.toggle('ww-dim', who === 'O');
+  oBtn.classList.toggle('ww-sel', who === 'O');
+  oBtn.classList.toggle('ww-dim', who === 'P');
+  confirmBtn.disabled = false;
+}
+
+function commitPoint() {
+  if (!pendingWinner) return;
+  logPoint(pendingWinner);
   goScreen('log-screen');
 }
 
