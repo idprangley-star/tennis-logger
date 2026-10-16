@@ -543,8 +543,8 @@ h2 { font-size: 1.15rem; font-weight: 700; }
           <button class="smod-btn fault-btn" id="smod-2f" disabled onclick="servemod('2fault')">2nd fault</button>
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;flex:1">
-          <button class="smod-btn ace-btn" id="smod-1a" disabled onclick="servemod('1ace')">1st ACE</button>
-          <button class="smod-btn ace-btn" id="smod-2a" disabled onclick="servemod('2ace')">2nd ACE</button>
+          <button class="smod-btn ace-btn" id="smod-1a" disabled onclick="servemod('1ace')">1st serve ACE</button>
+          <button class="smod-btn ace-btn" id="smod-2a" disabled onclick="servemod('2ace')">2nd serve ACE</button>
         </div>
       </div>
       <div class="psf-row">
@@ -719,12 +719,14 @@ let cur = {
   server: null,    // 'P' or 'O'
   side: null,      // 'Deuce' or 'Ad'
   set: '1st set',
-  outcome: '1st in',
+  outcome: '1st serve',
   aceDir: null,
   shots: [],
   twoLastShot: '', // 2nd last shot (shot before last shot)
   lastShot: '',
-  faultDir: '',         // fault/DF placement e.g. 'Wide long'
+  faultDir1: '',        // 1st serve fault direction e.g. 'Wide long'
+  faultDir2: '',        // double fault direction (2nd serve fault)
+  _faultStage: 1,       // 1 = logging 1st fault, 2 = logging DF
   lastShotDir: '',      // last shot direction e.g. 'Cross winner', 'Line net'
   _lsDirCat: '',        // internal: Line/Cross/Inside in/Inside out/Middle
   _lsDirOut: '',        // internal: net/long/wide (errors only)
@@ -781,8 +783,12 @@ function toggle2ndLast(val, btn) {
 }
 
 function toggleFaultDir(val, btn) {
-  cur.faultDir = val;
-  // Collapse back to normal shot area — keep value in cur.faultDir for logging
+  if (cur._faultStage === 2) {
+    cur.faultDir2 = val;
+  } else {
+    cur.faultDir1 = val;
+  }
+  // Collapse back to normal shot area
   document.getElementById('fault-dir-area').style.display = 'none';
   document.getElementById('fbh-area').style.display = '';
 }
@@ -960,9 +966,10 @@ function resetPoint() {
   cur = {
     server: null, side: null,
     set: document.getElementById('set-sel').value,
-    outcome: '1st in',
+    outcome: '1st serve',
     aceDir: null, shots: [], twoLastShot: '', lastShot: '',
-    faultDir: '', lastShotDir: '', _lsDirCat: '', _lsDirOut: ''
+    faultDir1: '', faultDir2: '', _faultStage: 1,
+    lastShotDir: '', _lsDirCat: '', _lsDirOut: ''
   };
   document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
   document.querySelectorAll('.fdir-btn').forEach(b => b.classList.remove('sel'));
@@ -1047,7 +1054,7 @@ function showFaultDir(show) {
     // Fault cleared: only hide fault-dir; let showAceDir manage the rest
     document.getElementById('fault-dir-area').style.display = 'none';
     document.querySelectorAll('.fdir-btn').forEach(b => b.classList.remove('sel'));
-    cur.faultDir = '';
+    cur.faultDir1 = ''; cur.faultDir2 = '';
   }
 }
 
@@ -1064,8 +1071,9 @@ function servemod(action) {
     document.getElementById('smod-2f').disabled = false;
     document.getElementById('smod-2a').disabled = false;
     document.getElementById('smod-1a').disabled = true;
-    cur.outcome = '2nd in';
+    cur.outcome = '2nd serve';
     cur.aceDir = null; cur.shots = [];
+    cur._faultStage = 1;
     showAceDir(false);
     showFaultDir(true);
     updatePSF(); updateFinishBtn(); updateUndoBtn();
@@ -1075,6 +1083,7 @@ function servemod(action) {
     cur.outcome = 'Double fault';
     // Disable shot buttons — DF means play is over
     setShotLock(true);
+    cur._faultStage = 2;
     showFaultDir(true); // reset for 2nd serve fault direction
     updatePSF();
     // Enable Point Finished so user confirms (no auto-log)
@@ -1083,7 +1092,7 @@ function servemod(action) {
 
   } else if (action === '1ace') {
     document.getElementById('smod-1a').classList.add('sel');
-    cur.outcome = '1st ACE';
+    cur.outcome = '1st serve ACE';
     cur.aceDir = null; cur.shots = [];
     showAceDir(true);
     showFaultDir(false);
@@ -1093,7 +1102,7 @@ function servemod(action) {
 
   } else if (action === '2ace') {
     document.getElementById('smod-2a').classList.add('sel');
-    cur.outcome = '2nd ACE';
+    cur.outcome = '2nd serve ACE';
     cur.aceDir = null; cur.shots = [];
     showAceDir(true);
     showFaultDir(false);
@@ -1154,7 +1163,7 @@ function updatePSF() {
   strip.innerHTML = '';
 
   // Serve pill
-  const isAce = cur.outcome === '1st ACE' || cur.outcome === '2nd ACE';
+  const isAce = cur.outcome === '1st serve ACE' || cur.outcome === '2nd serve ACE';
   const isDF  = cur.outcome === 'Double fault';
   const pill = document.createElement('span');
   pill.className = 'psf-pill ' + (isAce ? 'ace' : isDF ? 'df' : 'normal');
@@ -1177,7 +1186,7 @@ function updatePSF() {
 }
 
 function updateFinishBtn() {
-  const isAce = cur.outcome === '1st ACE' || cur.outcome === '2nd ACE';
+  const isAce = cur.outcome === '1st serve ACE' || cur.outcome === '2nd serve ACE';
   const isDF  = cur.outcome === 'Double fault';
   if (isDF) { document.getElementById('finish-btn').disabled = false; return; }
   if (isAce) {
@@ -1189,7 +1198,7 @@ function updateFinishBtn() {
 }
 
 function pointFinished() {
-  const isAce = cur.outcome === '1st ACE' || cur.outcome === '2nd ACE';
+  const isAce = cur.outcome === '1st serve ACE' || cur.outcome === '2nd serve ACE';
   const isDF  = cur.outcome === 'Double fault';
   if (isAce) {
     logPoint(cur.server); // server wins ace
@@ -1240,16 +1249,17 @@ function logPoint(winnerCode) {
     Server: serverName,
     Side: cur.side,
     'Serve outcome': cur.outcome,
-    'ACE direction': cur.aceDir || '',
+    '1st serve fault': cur.faultDir1 || '',
+    'Double fault': cur.faultDir2 || '',
+    'ACE direction': (cur.outcome === '1st serve ACE' || cur.outcome === '2nd serve ACE') ? (cur.aceDir || '') : '',
     Return: cur.shots[0] || '',
     'Serve+1': cur.shots[1] || '',
     'Return+1': cur.shots[2] || '',
     'Serve+2': cur.shots[3] || '',
-    '2nd last shot': cur.twoLastShot || '',
-    'Last shot': cur.lastShot || '',
-    'Fault direction': cur.faultDir || '',
-    'Last shot direction': cur.lastShotDir || '',
     Winner: winnerName,
+    'Last shot': cur.lastShot || '',
+    '2nd last shot': cur.twoLastShot ? cur.twoLastShot + ' forcing an error' : '',
+    Where: cur.lastShotDir || '',
     _winCode: winnerCode,
     _serverCode: cur.server
   };
@@ -1259,7 +1269,7 @@ function logPoint(winnerCode) {
 }
 
 function updateUndoBtn() {
-  const hasHistory = cur.shots.length > 0 || !!cur.aceDir || cur.outcome !== '1st in';
+  const hasHistory = cur.shots.length > 0 || !!cur.aceDir || cur.outcome !== '1st serve';
   document.getElementById('undo-btn').disabled = !hasHistory;
 }
 
@@ -1279,9 +1289,9 @@ function undoShot() {
       document.getElementById(id).classList.remove('sel'));
     updatePSF();
     document.getElementById('finish-btn').disabled = true;
-  } else if (cur.outcome !== '1st in') {
+  } else if (cur.outcome !== '1st serve') {
     // Reset serve outcome all the way back to default 1st serve
-    cur.outcome = '1st in';
+    cur.outcome = '1st serve';
     cur.aceDir = null; cur.shots = [];
     ['smod-1f','smod-2f','smod-1a','smod-2a'].forEach(id =>
       document.getElementById(id).classList.remove('sel'));
@@ -1318,7 +1328,7 @@ function renderLog() {
     const isDF  = pt['Serve outcome'] === 'Double fault';
 
     let psfHtml = `<span class="psf-pill ${isAce?'ace':isDF?'df':'normal'}" style="font-size:11px">${pt['Serve outcome']}</span>`;
-    if (pt['ACE direction']) psfHtml += ` <span class="psf-pill ace" style="font-size:11px">${pt['ACE direction']}</span>`;
+    if (isAce && pt['Where']) psfHtml += ` <span class="psf-pill ace" style="font-size:11px">${pt['Where']}</span>`;
     shots.forEach(s => {
       const cls = SHOT_CLASS[s] || 'fh';
       psfHtml += ` <span class="psf-pill ${cls}" style="font-size:11px">${SHOT_LABELS[s]||s}</span>`;
@@ -1479,7 +1489,7 @@ function renderAnalyse() {
   html += `<div class="stat-card"><div class="stat-card-title">${P} — Return</div>
     ${barRow('Return win %', oAllWon, oS.length, 'var(--green)')}
     ${barRow('vs 1st serve win %', os1WonPts, os1In.length)}
-    ${barRow('vs 2nd serve win %', oS.filter(pt=>['2nd in','2nd ACE'].includes(pt['Serve outcome'])&&pt._winCode==='P').length, os2In.length)}
+    ${barRow('vs 2nd serve win %', oS.filter(pt=>['2nd serve','2nd serve ACE'].includes(pt['Serve outcome'])&&pt._winCode==='P').length, os2In.length)}
     ${barRow(oDside+' return win %', pRDWon, pRD.length)}
     ${barRow(oAside+' return win %', pRAWon, pRA.length)}
     ${barRow('FH return win %', fhRetWon, fhRet.length)}
@@ -1612,8 +1622,8 @@ function renderAnalyse() {
   for (const pt of match.points) {
     if (pt._serverCode !== 'P') continue;
     let dir = '';
-    if (pt['ACE direction'] && ['Wide','T'].includes(pt['ACE direction'])) {
-      dir = pt['ACE direction'];
+    if (pt['Serve outcome'].includes('ACE') && pt['Where'] && ['Wide','T'].includes(pt['Where'])) {
+      dir = pt['Where'];
     } else if (pt.Return) {
       dir = serveDirection(pt.Side, pt.Return, oH2);
     }
@@ -1856,12 +1866,12 @@ function computeStats() {
   const NET = ['FH volley','BH volley','Smash'];
   const pS  = pts.filter(pt => pt._serverCode === 'P');
   const oS  = pts.filter(pt => pt._serverCode === 'O');
-  const s1In  = pS.filter(pt => ['1st in','1st ACE'].includes(pt['Serve outcome']));
-  const s2In  = pS.filter(pt => ['2nd in','2nd ACE'].includes(pt['Serve outcome']));
+  const s1In  = pS.filter(pt => ['1st serve','1st serve ACE'].includes(pt['Serve outcome']));
+  const s2In  = pS.filter(pt => ['2nd serve','2nd serve ACE'].includes(pt['Serve outcome']));
   const sDFs  = pS.filter(pt => pt['Serve outcome'] === 'Double fault');
   const sAce  = pS.filter(pt => pt['Serve outcome'].includes('ACE'));
-  const os1In = oS.filter(pt => ['1st in','1st ACE'].includes(pt['Serve outcome']));
-  const os2In = oS.filter(pt => ['2nd in','2nd ACE'].includes(pt['Serve outcome']));
+  const os1In = oS.filter(pt => ['1st serve','1st serve ACE'].includes(pt['Serve outcome']));
+  const os2In = oS.filter(pt => ['2nd serve','2nd serve ACE'].includes(pt['Serve outcome']));
   const oDFs  = oS.filter(pt => pt['Serve outcome'] === 'Double fault');
   const oAce  = oS.filter(pt => pt['Serve outcome'].includes('ACE'));
   const netPts   = pts.filter(pt => NET.some(s => [pt.Return,pt['Serve+1'],pt['Return+1'],pt['Serve+2']].includes(s)));
@@ -1887,7 +1897,7 @@ function getCoachingPoint(pts, playerName) {
   if (dfs >= 3) return `${dfs} double faults so far — prioritise getting the second serve in.`;
 
   // 1st serve in %
-  const s1in = serving.filter(p => ['1st in','1st ACE'].includes(p['Serve outcome'])).length;
+  const s1in = serving.filter(p => ['1st serve','1st serve ACE'].includes(p['Serve outcome'])).length;
   const s1pct = pct(s1in, serving.length);
   if (s1pct < 50 && serving.length >= 8)
     return `1st serve % is only ${s1pct}% — take a little pace off to get more in.`;
@@ -1940,9 +1950,9 @@ function downloadCSV() {
   XLSX.utils.book_append_sheet(wb, ws1, 'Match Info');
 
   // Sheet 2: Point-by-point data (unchanged columns)
-  const cols = ['Set','Server','Side','Serve outcome','ACE direction',
-                'Return','Serve+1','Return+1','Serve+2','2nd last shot','Last shot',
-                'Fault direction','Last shot direction','Winner'];
+  const cols = ['Set','Server','Side','Serve outcome','1st serve fault','Double fault',
+                'ACE direction','Return','Serve+1','Return+1','Serve+2','Winner','Last shot',
+                '2nd last shot','Where'];
   const rows = match.points.map(pt => cols.map(c => pt[c] || ''));
   const ws2 = XLSX.utils.aoa_to_sheet([cols, ...rows]);
   XLSX.utils.book_append_sheet(wb, ws2, 'Points');
@@ -2149,8 +2159,8 @@ function downloadStats() {
   for (const pt of match.points) {
     const isServerP = pt._serverCode === 'P';
     let dir = '';
-    if (pt['ACE direction'] && ['Wide','T'].includes(pt['ACE direction'])) {
-      dir = pt['ACE direction'];
+    if (pt['Serve outcome'].includes('ACE') && pt['Where'] && ['Wide','T'].includes(pt['Where'])) {
+      dir = pt['Where'];
     } else if (pt.Return) {
       const receiverHand = isServerP ? (match.oppHand||'R') : (match.playerHand||'R');
       dir = serveDirection(pt.Side, pt.Return, receiverHand);
