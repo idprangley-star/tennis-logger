@@ -1681,13 +1681,11 @@ function openEdit(i) {
   buildEditLastShotSelect();
   document.getElementById('edit-last-shot').value = editState.lastShot;
   document.getElementById('edit-last-shot').addEventListener('change', editLastShotChange);
-  editLastShotChange();
-  // Restore forcing shot selection
-  if (editState.forcing) {
-    document.querySelectorAll('[data-efield="forcing"]').forEach(b => {
-      b.classList.toggle('sel', b.dataset.val === editState.forcing);
-    });
-  }
+  editLastShotChange(); // shows/hides sections; does NOT clear editState.forcing
+  // Restore forcing shot highlight (editState.forcing set above, survives editLastShotChange)
+  document.querySelectorAll('[data-efield="forcing"]').forEach(b => {
+    b.classList.toggle('sel', b.dataset.val === editState.forcing && editState.forcing !== '');
+  });
 
   // Parse stored Where string back into direction buttons
   const where = pt.Where || '';
@@ -1734,17 +1732,21 @@ function editLastShotChange() {
   const isWinner  = ls.includes('winner');
   const isError   = ls.includes(' error');
   const isForced  = ls.includes(' forced error') && !ls.startsWith('Return');
-  // Direction section for any last shot
-  document.getElementById('edit-where-section').style.display = hasShot ? '' : 'none';
-  // Net/long/wide only for errors
-  document.getElementById('edit-errout-row').style.display = isError ? 'flex' : 'none';
-  // Forcing shot only for forced errors (not return forced — serve was the forcer)
+  // Direction (Where) shown for winners and unforced errors — NOT for forced errors
+  document.getElementById('edit-where-section').style.display = (hasShot && !isForced) ? '' : 'none';
+  // Net/long/wide only for unforced errors
+  document.getElementById('edit-errout-row').style.display = (isError && !isForced) ? 'flex' : 'none';
+  // Forcing shot only for non-return forced errors
   document.getElementById('edit-forcing-section').style.display = isForced ? '' : 'none';
-  // Reset direction state
-  editState.errCat = ''; editState.errOut = ''; editState.forcing = '';
+  // Reset direction state only
+  editState.errCat = ''; editState.errOut = '';
   document.querySelectorAll('[data-efield="errCat"]').forEach(b => b.classList.remove('sel'));
   document.querySelectorAll('[data-efield="errOut"]').forEach(b => b.classList.remove('sel'));
-  document.querySelectorAll('[data-efield="forcing"]').forEach(b => b.classList.remove('sel'));
+  // Reset forcing only when switching away from a forced error shot
+  if (!isForced) {
+    editState.forcing = '';
+    document.querySelectorAll('[data-efield="forcing"]').forEach(b => b.classList.remove('sel'));
+  }
 }
 
 function editPickDir(val, btn) {
