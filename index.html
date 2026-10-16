@@ -388,7 +388,45 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .log-winner { font-weight: 700; font-size: 13px; }
 .log-shots { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
 .log-del { background: var(--bg3); color: var(--fg2); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.log-edit { background: var(--bg3); color: var(--accent); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.log-lastshot { font-size: 11px; color: var(--fg2); margin-top: 1px; }
 .empty-log { text-align: center; color: var(--fg2); padding: 48px 16px; font-size: 14px; }
+
+/* ─── EDIT MODAL ─────────────────────────────────────── */
+.edit-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.75);
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px;
+}
+.edit-modal {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px;
+  width: 100%; max-width: 500px;
+  display: flex; flex-direction: column; gap: 12px;
+  max-height: 92vh; overflow-y: auto;
+}
+.edit-modal-title { font-size: 15px; font-weight: 700; }
+.edit-field { display: flex; flex-direction: column; gap: 5px; }
+.edit-label { font-size: 10px; font-weight: 700; color: var(--fg2); text-transform: uppercase; letter-spacing: .06em; }
+.edit-row { display: flex; gap: 7px; }
+.edit-opt {
+  flex: 1; padding: 9px 8px; border-radius: 8px;
+  background: var(--bg3); color: var(--fg);
+  font-size: 13px; font-weight: 600;
+  border: 2px solid transparent;
+}
+.edit-opt.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
+.edit-opt.green.sel { background: var(--green); border-color: var(--green); }
+.edit-opt.red.sel { background: var(--red); border-color: var(--red); }
+.edit-select {
+  background: var(--bg3); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 10px; font-size: 13px; width: 100%;
+  font-family: inherit;
+}
+.edit-save { background: var(--green); color: #fff; padding: 13px; border-radius: 10px; font-size: 15px; font-weight: 700; width: 100%; }
+.edit-cancel { background: var(--bg3); color: var(--fg2); padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 600; width: 100%; }
 
 /* ─── ANALYSE SCREEN ─────────────────────────────────── */
 #analyse { padding: 0; }
@@ -671,6 +709,69 @@ h2 { font-size: 1.15rem; font-weight: 700; }
     <button class="dc-confirm" onclick="confirmDelete()">Yes, delete</button>
   </div>
   <div class="log-list" id="log-list"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!--  EDIT POINT MODAL                                   -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="edit-overlay" class="edit-overlay" style="display:none" onclick="editOverlayClick(event)">
+  <div class="edit-modal">
+    <div class="edit-modal-title" id="edit-title">Edit Point</div>
+
+    <div class="edit-field">
+      <div class="edit-label">Server</div>
+      <div class="edit-row" id="edit-server-row">
+        <button class="edit-opt" data-efield="server" data-val="P" onclick="editPick('server','P',this)"></button>
+        <button class="edit-opt" data-efield="server" data-val="O" onclick="editPick('server','O',this)"></button>
+      </div>
+    </div>
+
+    <div class="edit-field">
+      <div class="edit-label">Side</div>
+      <div class="edit-row">
+        <button class="edit-opt" data-efield="side" data-val="Deuce" onclick="editPick('side','Deuce',this)">Deuce</button>
+        <button class="edit-opt" data-efield="side" data-val="Ad" onclick="editPick('side','Ad',this)">Ad</button>
+      </div>
+    </div>
+
+    <div class="edit-field">
+      <div class="edit-label">Serve outcome</div>
+      <select class="edit-select" id="edit-serve-outcome">
+        <option value="1st serve">1st serve</option>
+        <option value="2nd serve">2nd serve</option>
+        <option value="1st serve ACE">1st serve ACE</option>
+        <option value="2nd serve ACE">2nd serve ACE</option>
+        <option value="Double fault">Double fault</option>
+      </select>
+    </div>
+
+    <div class="edit-field">
+      <div class="edit-label">Winner</div>
+      <div class="edit-row" id="edit-winner-row">
+        <button class="edit-opt green" data-efield="winner" data-val="P" onclick="editPick('winner','P',this)"></button>
+        <button class="edit-opt green" data-efield="winner" data-val="O" onclick="editPick('winner','O',this)"></button>
+      </div>
+    </div>
+
+    <div class="edit-field">
+      <div class="edit-label">Last shot (optional)</div>
+      <select class="edit-select" id="edit-last-shot">
+        <option value="">— none —</option>
+        <optgroup label="Winners">
+        </optgroup>
+        <optgroup label="Errors">
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="edit-field">
+      <div class="edit-label">Where / direction (optional)</div>
+      <input type="text" class="edit-select" id="edit-where" placeholder="e.g. Cross winner, Line net" autocomplete="off" style="border-radius:8px">
+    </div>
+
+    <button class="edit-save" onclick="saveEdit()">Save Changes</button>
+    <button class="edit-cancel" onclick="closeEdit()">Cancel</button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
@@ -1334,14 +1435,20 @@ function renderLog() {
       psfHtml += ` <span class="psf-pill ${cls}" style="font-size:11px">${SHOT_LABELS[s]||s}</span>`;
     });
 
+    const lastShotHtml = pt['Last shot']
+      ? `<div class="log-lastshot">💥 ${pt['Last shot']}${pt.Where ? ' · ' + pt.Where : ''}</div>`
+      : '';
+
     div.innerHTML = `
       <div class="log-item-row1">
         <span class="log-num">#${i+1}</span>
         <span class="log-meta">${pt.Set} · ${pt.Server.split(' ').pop()} serving · ${pt.Side}</span>
         <span class="log-winner" style="color:${pt._winCode==='P'?'var(--green)':'var(--fg2)'}">${pt.Winner.split(' ').pop()} won</span>
+        <button class="log-edit" onclick="openEdit(${i})">Edit</button>
         <button class="log-del" onclick="askDelete(${i})">Delete</button>
       </div>
       <div class="log-shots">${psfHtml}</div>
+      ${lastShotHtml}
     `;
     list.appendChild(div);
   });
@@ -1372,6 +1479,113 @@ function confirmDelete() {
     pendingDeleteIdx = null;
     renderLog();
   }
+}
+
+// ═══════════════════════════════════════════════════════
+//  EDIT POINT
+// ═══════════════════════════════════════════════════════
+let editIdx = null;
+let editState = {};
+
+function buildEditLastShotSelect() {
+  const sel = document.getElementById('edit-last-shot');
+  sel.innerHTML = '<option value="">— none —</option>';
+  const wg = document.createElement('optgroup');
+  wg.label = 'Winners';
+  LS_WINNERS.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; wg.appendChild(o); });
+  const eg = document.createElement('optgroup');
+  eg.label = 'Errors';
+  LS_ERRORS.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; eg.appendChild(o); });
+  sel.appendChild(wg);
+  sel.appendChild(eg);
+}
+
+function openEdit(i) {
+  editIdx = i;
+  const pt = match.points[i];
+  editState = {
+    server: pt._serverCode,
+    side: pt.Side,
+    serveOutcome: pt['Serve outcome'],
+    winner: pt._winCode,
+    lastShot: pt['Last shot'] || '',
+    where: pt.Where || ''
+  };
+
+  // Title
+  document.getElementById('edit-title').textContent = `Edit Point #${i+1}`;
+
+  // Server buttons
+  const srvRow = document.getElementById('edit-server-row');
+  srvRow.children[0].textContent = match.playerName;
+  srvRow.children[1].textContent = match.opp;
+  editPick('server', editState.server, null, true);
+
+  // Side
+  editPick('side', editState.side, null, true);
+
+  // Serve outcome
+  document.getElementById('edit-serve-outcome').value = editState.serveOutcome;
+
+  // Winner buttons
+  const winRow = document.getElementById('edit-winner-row');
+  winRow.children[0].textContent = match.playerName + ' won';
+  winRow.children[1].textContent = match.opp + ' won';
+  editPick('winner', editState.winner, null, true);
+
+  // Last shot select
+  buildEditLastShotSelect();
+  document.getElementById('edit-last-shot').value = editState.lastShot;
+
+  // Where
+  document.getElementById('edit-where').value = editState.where;
+
+  document.getElementById('edit-overlay').style.display = 'flex';
+}
+
+function editPick(field, val, btn, silent) {
+  editState[field] = val;
+  // Find all buttons for this field and update sel class
+  const allBtns = document.querySelectorAll(`[data-efield="${field}"]`);
+  allBtns.forEach(b => b.classList.toggle('sel', b.dataset.val === val));
+}
+
+function editOverlayClick(e) {
+  if (e.target === document.getElementById('edit-overlay')) closeEdit();
+}
+
+function closeEdit() {
+  editIdx = null;
+  document.getElementById('edit-overlay').style.display = 'none';
+}
+
+function saveEdit() {
+  if (editIdx === null) return;
+  const pt = match.points[editIdx];
+
+  // Server
+  pt._serverCode = editState.server;
+  pt.Server = editState.server === 'P' ? match.playerName : match.opp;
+
+  // Side
+  pt.Side = editState.side;
+
+  // Serve outcome
+  pt['Serve outcome'] = document.getElementById('edit-serve-outcome').value;
+
+  // Winner
+  pt._winCode = editState.winner;
+  pt.Winner = editState.winner === 'P' ? match.playerName : match.opp;
+
+  // Last shot
+  pt['Last shot'] = document.getElementById('edit-last-shot').value;
+
+  // Where
+  pt.Where = document.getElementById('edit-where').value.trim();
+
+  saveMatch();
+  closeEdit();
+  renderLog();
 }
 
 // ═══════════════════════════════════════════════════════
