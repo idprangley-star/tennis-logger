@@ -860,6 +860,18 @@ h2 { font-size: 1.15rem; font-weight: 700; }
       </select>
     </div>
 
+    <!-- Forcing shot — shown when last shot is a forced error -->
+    <div class="edit-field" id="edit-forcing-section" style="display:none">
+      <div class="edit-label">Shot that forced the error</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="edit-opt" data-efield="forcing" data-val="FH" onclick="editPickForcing('FH',this)">FH</button>
+        <button class="edit-opt" data-efield="forcing" data-val="BH" onclick="editPickForcing('BH',this)">BH</button>
+        <button class="edit-opt" data-efield="forcing" data-val="FH volley" onclick="editPickForcing('FH volley',this)">FH Volley</button>
+        <button class="edit-opt" data-efield="forcing" data-val="BH volley" onclick="editPickForcing('BH volley',this)">BH Volley</button>
+        <button class="edit-opt" data-efield="forcing" data-val="Smash" onclick="editPickForcing('Smash',this)">Smash</button>
+      </div>
+    </div>
+
     <!-- Where / direction — same logic as live logging -->
     <!-- For winners: pick category only (stored as "Cross winner" etc) -->
     <!-- For errors: pick category then net/long/wide (stored as "Cross long" etc) -->
@@ -1614,6 +1626,9 @@ function buildEditLastShotSelect() {
 function openEdit(i) {
   editIdx = i;
   const pt = match.points[i];
+  // Parse stored '2nd last shot' back to shot name (stored as "FH forcing an error")
+  const raw2nd = pt['2nd last shot'] || '';
+  const forcingShot = raw2nd.replace(' forcing an error', '');
   editState = {
     server: pt._serverCode,
     side: pt.Side,
@@ -1624,6 +1639,7 @@ function openEdit(i) {
     lastShot: pt['Last shot'] || '',
     errCat: '',
     errOut: '',
+    forcing: forcingShot,
   };
 
   // Title
@@ -1666,6 +1682,12 @@ function openEdit(i) {
   document.getElementById('edit-last-shot').value = editState.lastShot;
   document.getElementById('edit-last-shot').addEventListener('change', editLastShotChange);
   editLastShotChange();
+  // Restore forcing shot selection
+  if (editState.forcing) {
+    document.querySelectorAll('[data-efield="forcing"]').forEach(b => {
+      b.classList.toggle('sel', b.dataset.val === editState.forcing);
+    });
+  }
 
   // Parse stored Where string back into direction buttons
   const where = pt.Where || '';
@@ -1695,39 +1717,42 @@ function openEdit(i) {
 
 function editServeOutcomeChange() {
   const v = document.getElementById('edit-serve-outcome').value;
-  const isAce = v.includes('ACE');
-  const isDF = v === 'Double fault';
-  const is1stIn = v === '1st serve' || v === '1st serve ACE';
-  document.getElementById('edit-ace-section').style.display = isAce ? '' : 'none';
-  document.getElementById('edit-fault1-section').style.display = (!isAce && !isDF) ? '' : 'none';
+  const is1stAce  = v === '1st serve ACE';
+  const is2ndAce  = v === '2nd serve ACE';
+  const isAce     = is1stAce || is2ndAce;
+  const isDF      = v === 'Double fault';
+  const had1stFault = v === '2nd serve' || is2ndAce || isDF; // 1st serve was a fault
+  document.getElementById('edit-ace-section').style.display    = isAce ? '' : 'none';
+  document.getElementById('edit-fault1-section').style.display = had1stFault ? '' : 'none';
   document.getElementById('edit-fault2-section').style.display = isDF ? '' : 'none';
-  document.getElementById('edit-rally-section').style.display = (isAce || isDF) ? 'none' : '';
+  document.getElementById('edit-rally-section').style.display  = (isAce || isDF) ? 'none' : '';
 }
 
 function editLastShotChange() {
   const ls = document.getElementById('edit-last-shot').value;
-  const hasShot = ls !== '';
-  const isWinner = ls.includes('winner');
-  const isError  = ls.includes(' error');
-  // Show direction section for any shot that has a direction
+  const hasShot   = ls !== '';
+  const isWinner  = ls.includes('winner');
+  const isError   = ls.includes(' error');
+  const isForced  = ls.includes(' forced error') && !ls.startsWith('Return');
+  // Direction section for any last shot
   document.getElementById('edit-where-section').style.display = hasShot ? '' : 'none';
-  // Show net/long/wide only for errors
+  // Net/long/wide only for errors
   document.getElementById('edit-errout-row').style.display = isError ? 'flex' : 'none';
-  // Reset state when shot type changes
-  editState.errCat = ''; editState.errOut = '';
+  // Forcing shot only for forced errors (not return forced — serve was the forcer)
+  document.getElementById('edit-forcing-section').style.display = isForced ? '' : 'none';
+  // Reset direction state
+  editState.errCat = ''; editState.errOut = ''; editState.forcing = '';
   document.querySelectorAll('[data-efield="errCat"]').forEach(b => b.classList.remove('sel'));
   document.querySelectorAll('[data-efield="errOut"]').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('[data-efield="forcing"]').forEach(b => b.classList.remove('sel'));
 }
 
 function editPickDir(val, btn) {
   editState.errCat = val;
   document.querySelectorAll('[data-efield="errCat"]').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
-  // For winners, outcome row stays hidden and Where is built immediately
   const ls = document.getElementById('edit-last-shot').value;
-  const isWinner = ls.includes('winner');
-  if (isWinner) {
-    // No errOut needed
+  if (ls.includes('winner')) {
     document.getElementById('edit-errout-row').style.display = 'none';
     editState.errOut = '';
   }
@@ -1736,6 +1761,12 @@ function editPickDir(val, btn) {
 function editPickErrOut(val, btn) {
   editState.errOut = val;
   document.querySelectorAll('[data-efield="errOut"]').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function editPickForcing(val, btn) {
+  editState.forcing = val;
+  document.querySelectorAll('[data-efield="forcing"]').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
 }
 
@@ -1789,9 +1820,11 @@ function saveEdit() {
   pt._winCode = editState.winner;
   pt.Winner = editState.winner === 'P' ? match.playerName : match.opp;
 
-  // Last shot
+  // Last shot + 2nd last shot (forcing shot)
   const lastShot = document.getElementById('edit-last-shot').value;
   pt['Last shot'] = lastShot;
+  const isForced = lastShot.includes(' forced error') && !lastShot.startsWith('Return');
+  pt['2nd last shot'] = (isForced && editState.forcing) ? `${editState.forcing} forcing an error` : '';
 
   // Build Where — matches logPoint format exactly
   // Winners: "Cross winner", "Line winner" etc
