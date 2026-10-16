@@ -736,13 +736,109 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 
     <div class="edit-field">
       <div class="edit-label">Serve outcome</div>
-      <select class="edit-select" id="edit-serve-outcome">
+      <select class="edit-select" id="edit-serve-outcome" onchange="editServeOutcomeChange()">
         <option value="1st serve">1st serve</option>
         <option value="2nd serve">2nd serve</option>
         <option value="1st serve ACE">1st serve ACE</option>
         <option value="2nd serve ACE">2nd serve ACE</option>
         <option value="Double fault">Double fault</option>
       </select>
+    </div>
+
+    <!-- ACE direction — shown when ACE selected -->
+    <div class="edit-field" id="edit-ace-section" style="display:none">
+      <div class="edit-label">ACE direction</div>
+      <div class="edit-row">
+        <button class="edit-opt" data-efield="aceDir" data-val="Wide" onclick="editPick('aceDir','Wide',this)">Wide</button>
+        <button class="edit-opt" data-efield="aceDir" data-val="T" onclick="editPick('aceDir','T',this)">T</button>
+        <button class="edit-opt" data-efield="aceDir" data-val="Other" onclick="editPick('aceDir','Other',this)">Other</button>
+      </div>
+    </div>
+
+    <!-- 1st serve fault direction — shown when 1st serve fault -->
+    <div class="edit-field" id="edit-fault1-section" style="display:none">
+      <div class="edit-label">1st serve fault direction</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="edit-fault1-row">
+        <button class="edit-opt" data-efield="fault1" data-val="Wide wide" onclick="editPick('fault1','Wide wide',this)">Wide wide</button>
+        <button class="edit-opt" data-efield="fault1" data-val="T wide" onclick="editPick('fault1','T wide',this)">T wide</button>
+        <button class="edit-opt" data-efield="fault1" data-val="Wide long" onclick="editPick('fault1','Wide long',this)">Wide long</button>
+        <button class="edit-opt" data-efield="fault1" data-val="T long" onclick="editPick('fault1','T long',this)">T long</button>
+        <button class="edit-opt" data-efield="fault1" data-val="Wide net" onclick="editPick('fault1','Wide net',this)">Wide net</button>
+        <button class="edit-opt" data-efield="fault1" data-val="T net" onclick="editPick('fault1','T net',this)">T net</button>
+        <button class="edit-opt" data-efield="fault1" data-val="Body long" onclick="editPick('fault1','Body long',this)">Body long</button>
+        <button class="edit-opt" data-efield="fault1" data-val="Body net" onclick="editPick('fault1','Body net',this)">Body net</button>
+      </div>
+    </div>
+
+    <!-- Double fault direction — shown when DF selected -->
+    <div class="edit-field" id="edit-fault2-section" style="display:none">
+      <div class="edit-label">Double fault direction</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <button class="edit-opt" data-efield="fault2" data-val="Wide wide" onclick="editPick('fault2','Wide wide',this)">Wide wide</button>
+        <button class="edit-opt" data-efield="fault2" data-val="T wide" onclick="editPick('fault2','T wide',this)">T wide</button>
+        <button class="edit-opt" data-efield="fault2" data-val="Wide long" onclick="editPick('fault2','Wide long',this)">Wide long</button>
+        <button class="edit-opt" data-efield="fault2" data-val="T long" onclick="editPick('fault2','T long',this)">T long</button>
+        <button class="edit-opt" data-efield="fault2" data-val="Wide net" onclick="editPick('fault2','Wide net',this)">Wide net</button>
+        <button class="edit-opt" data-efield="fault2" data-val="T net" onclick="editPick('fault2','T net',this)">T net</button>
+        <button class="edit-opt" data-efield="fault2" data-val="Body long" onclick="editPick('fault2','Body long',this)">Body long</button>
+        <button class="edit-opt" data-efield="fault2" data-val="Body net" onclick="editPick('fault2','Body net',this)">Body net</button>
+      </div>
+    </div>
+
+    <!-- Shot sequence — hidden for ACE / DF -->
+    <div id="edit-rally-section">
+      <div class="edit-field">
+        <div class="edit-label">Return</div>
+        <div class="edit-row">
+          <select class="edit-select" id="edit-shot-0">
+            <option value="">—</option>
+            <option value="FH">FH</option>
+            <option value="BH">BH</option>
+            <option value="FH volley">FH volley</option>
+            <option value="BH volley">BH volley</option>
+            <option value="Smash">Smash</option>
+          </select>
+        </div>
+      </div>
+      <div class="edit-field">
+        <div class="edit-label">Serve+1</div>
+        <div class="edit-row">
+          <select class="edit-select" id="edit-shot-1">
+            <option value="">—</option>
+            <option value="FH">FH</option>
+            <option value="BH">BH</option>
+            <option value="FH volley">FH volley</option>
+            <option value="BH volley">BH volley</option>
+            <option value="Smash">Smash</option>
+          </select>
+        </div>
+      </div>
+      <div class="edit-field">
+        <div class="edit-label">Return+1</div>
+        <div class="edit-row">
+          <select class="edit-select" id="edit-shot-2">
+            <option value="">—</option>
+            <option value="FH">FH</option>
+            <option value="BH">BH</option>
+            <option value="FH volley">FH volley</option>
+            <option value="BH volley">BH volley</option>
+            <option value="Smash">Smash</option>
+          </select>
+        </div>
+      </div>
+      <div class="edit-field">
+        <div class="edit-label">Serve+2</div>
+        <div class="edit-row">
+          <select class="edit-select" id="edit-shot-3">
+            <option value="">—</option>
+            <option value="FH">FH</option>
+            <option value="BH">BH</option>
+            <option value="FH volley">FH volley</option>
+            <option value="BH volley">BH volley</option>
+            <option value="Smash">Smash</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <div class="edit-field">
@@ -764,9 +860,24 @@ h2 { font-size: 1.15rem; font-weight: 700; }
       </select>
     </div>
 
-    <div class="edit-field">
-      <div class="edit-label">Where / direction (optional)</div>
-      <input type="text" class="edit-select" id="edit-where" placeholder="e.g. Cross winner, Line net" autocomplete="off" style="border-radius:8px">
+    <!-- Where / direction — same logic as live logging -->
+    <!-- For winners: pick category only (stored as "Cross winner" etc) -->
+    <!-- For errors: pick category then net/long/wide (stored as "Cross long" etc) -->
+    <div class="edit-field" id="edit-where-section" style="display:none">
+      <div class="edit-label">Direction (Where)</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+        <button class="edit-opt" data-efield="errCat" data-val="Line" onclick="editPickDir('Line',this)">Line</button>
+        <button class="edit-opt" data-efield="errCat" data-val="Cross" onclick="editPickDir('Cross',this)">Cross</button>
+        <button class="edit-opt" data-efield="errCat" data-val="Inside in" onclick="editPickDir('Inside in',this)">Inside in</button>
+        <button class="edit-opt" data-efield="errCat" data-val="Inside out" onclick="editPickDir('Inside out',this)">Inside out</button>
+        <button class="edit-opt" data-efield="errCat" data-val="Middle" onclick="editPickDir('Middle',this)">Middle</button>
+      </div>
+      <!-- Error outcome row — only for errors -->
+      <div style="display:flex;gap:6px" id="edit-errout-row" style="display:none">
+        <button class="edit-opt" data-efield="errOut" data-val="net" onclick="editPickErrOut('net',this)">Net</button>
+        <button class="edit-opt" data-efield="errOut" data-val="long" onclick="editPickErrOut('long',this)">Long</button>
+        <button class="edit-opt" data-efield="errOut" data-val="wide" onclick="editPickErrOut('wide',this)">Wide</button>
+      </div>
     </div>
 
     <button class="edit-save" onclick="saveEdit()">Save Changes</button>
@@ -1506,10 +1617,13 @@ function openEdit(i) {
   editState = {
     server: pt._serverCode,
     side: pt.Side,
-    serveOutcome: pt['Serve outcome'],
     winner: pt._winCode,
+    aceDir: pt['ACE direction'] || '',
+    fault1: pt['1st serve fault'] || '',
+    fault2: pt['Double fault'] || '',
     lastShot: pt['Last shot'] || '',
-    where: pt.Where || ''
+    errCat: '',
+    errOut: '',
   };
 
   // Title
@@ -1525,7 +1639,21 @@ function openEdit(i) {
   editPick('side', editState.side, null, true);
 
   // Serve outcome
-  document.getElementById('edit-serve-outcome').value = editState.serveOutcome;
+  document.getElementById('edit-serve-outcome').value = pt['Serve outcome'];
+  editServeOutcomeChange(); // show/hide conditional sections
+
+  // ACE direction
+  editPick('aceDir', editState.aceDir, null, true);
+
+  // Fault directions
+  editPick('fault1', editState.fault1, null, true);
+  editPick('fault2', editState.fault2, null, true);
+
+  // Shot sequence
+  const seqCols = ['Return','Serve+1','Return+1','Serve+2'];
+  seqCols.forEach((col, idx) => {
+    document.getElementById(`edit-shot-${idx}`).value = pt[col] || '';
+  });
 
   // Winner buttons
   const winRow = document.getElementById('edit-winner-row');
@@ -1536,11 +1664,79 @@ function openEdit(i) {
   // Last shot select
   buildEditLastShotSelect();
   document.getElementById('edit-last-shot').value = editState.lastShot;
+  document.getElementById('edit-last-shot').addEventListener('change', editLastShotChange);
+  editLastShotChange();
 
-  // Where
-  document.getElementById('edit-where').value = editState.where;
+  // Parse stored Where string back into direction buttons
+  const where = pt.Where || '';
+  const cats = ['Inside in','Inside out','Line','Cross','Middle'];
+  const outs = ['net','long','wide'];
+  for (const c of cats) {
+    if (where.toLowerCase().startsWith(c.toLowerCase())) {
+      editState.errCat = c;
+      document.querySelectorAll('[data-efield="errCat"]').forEach(b => {
+        b.classList.toggle('sel', b.dataset.val === c);
+      });
+      break;
+    }
+  }
+  for (const o of outs) {
+    if (where.toLowerCase().endsWith(o)) {
+      editState.errOut = o;
+      document.querySelectorAll('[data-efield="errOut"]').forEach(b => {
+        b.classList.toggle('sel', b.dataset.val === o);
+      });
+      break;
+    }
+  }
 
   document.getElementById('edit-overlay').style.display = 'flex';
+}
+
+function editServeOutcomeChange() {
+  const v = document.getElementById('edit-serve-outcome').value;
+  const isAce = v.includes('ACE');
+  const isDF = v === 'Double fault';
+  const is1stIn = v === '1st serve' || v === '1st serve ACE';
+  document.getElementById('edit-ace-section').style.display = isAce ? '' : 'none';
+  document.getElementById('edit-fault1-section').style.display = (!isAce && !isDF) ? '' : 'none';
+  document.getElementById('edit-fault2-section').style.display = isDF ? '' : 'none';
+  document.getElementById('edit-rally-section').style.display = (isAce || isDF) ? 'none' : '';
+}
+
+function editLastShotChange() {
+  const ls = document.getElementById('edit-last-shot').value;
+  const hasShot = ls !== '';
+  const isWinner = ls.includes('winner');
+  const isError  = ls.includes(' error');
+  // Show direction section for any shot that has a direction
+  document.getElementById('edit-where-section').style.display = hasShot ? '' : 'none';
+  // Show net/long/wide only for errors
+  document.getElementById('edit-errout-row').style.display = isError ? 'flex' : 'none';
+  // Reset state when shot type changes
+  editState.errCat = ''; editState.errOut = '';
+  document.querySelectorAll('[data-efield="errCat"]').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('[data-efield="errOut"]').forEach(b => b.classList.remove('sel'));
+}
+
+function editPickDir(val, btn) {
+  editState.errCat = val;
+  document.querySelectorAll('[data-efield="errCat"]').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  // For winners, outcome row stays hidden and Where is built immediately
+  const ls = document.getElementById('edit-last-shot').value;
+  const isWinner = ls.includes('winner');
+  if (isWinner) {
+    // No errOut needed
+    document.getElementById('edit-errout-row').style.display = 'none';
+    editState.errOut = '';
+  }
+}
+
+function editPickErrOut(val, btn) {
+  editState.errOut = val;
+  document.querySelectorAll('[data-efield="errOut"]').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
 }
 
 function editPick(field, val, btn, silent) {
@@ -1555,6 +1751,8 @@ function editOverlayClick(e) {
 }
 
 function closeEdit() {
+  // Clean up last-shot change listener
+  document.getElementById('edit-last-shot').removeEventListener('change', editLastShotChange);
   editIdx = null;
   document.getElementById('edit-overlay').style.display = 'none';
 }
@@ -1562,26 +1760,57 @@ function closeEdit() {
 function saveEdit() {
   if (editIdx === null) return;
   const pt = match.points[editIdx];
+  const serveOutcome = document.getElementById('edit-serve-outcome').value;
+  const isAce = serveOutcome.includes('ACE');
+  const isDF  = serveOutcome === 'Double fault';
 
-  // Server
+  // Server / Side
   pt._serverCode = editState.server;
   pt.Server = editState.server === 'P' ? match.playerName : match.opp;
-
-  // Side
   pt.Side = editState.side;
 
-  // Serve outcome
-  pt['Serve outcome'] = document.getElementById('edit-serve-outcome').value;
+  // Serve outcome + direction fields
+  pt['Serve outcome'] = serveOutcome;
+  pt['ACE direction'] = isAce ? (editState.aceDir || '') : '';
+  pt['1st serve fault'] = (!isAce && !isDF) ? (editState.fault1 || '') : '';
+  pt['Double fault']    = isDF ? (editState.fault2 || '') : '';
+
+  // Shot sequence
+  const seqCols = ['Return','Serve+1','Return+1','Serve+2'];
+  if (isAce || isDF) {
+    seqCols.forEach(col => { pt[col] = ''; });
+  } else {
+    seqCols.forEach((col, idx) => {
+      pt[col] = document.getElementById(`edit-shot-${idx}`).value;
+    });
+  }
 
   // Winner
   pt._winCode = editState.winner;
   pt.Winner = editState.winner === 'P' ? match.playerName : match.opp;
 
   // Last shot
-  pt['Last shot'] = document.getElementById('edit-last-shot').value;
+  const lastShot = document.getElementById('edit-last-shot').value;
+  pt['Last shot'] = lastShot;
 
-  // Where
-  pt.Where = document.getElementById('edit-where').value.trim();
+  // Build Where — matches logPoint format exactly
+  // Winners: "Cross winner", "Line winner" etc
+  // Errors:  "Cross long", "Line net" etc
+  const isWinner = lastShot.includes('winner');
+  const isError  = lastShot.includes(' error');
+  if (isWinner && editState.errCat) {
+    pt.Where = `${editState.errCat} winner`;
+  } else if (isError && editState.errCat && editState.errOut) {
+    pt.Where = `${editState.errCat} ${editState.errOut}`;
+  } else if (isError && editState.errCat) {
+    pt.Where = editState.errCat; // partial — cat only
+  } else {
+    pt.Where = '';
+  }
+
+  // Remove the change listener to avoid duplicates on reopen
+  const lsSel = document.getElementById('edit-last-shot');
+  lsSel.removeEventListener('change', editLastShotChange);
 
   saveMatch();
   closeEdit();
