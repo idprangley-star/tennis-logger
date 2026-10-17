@@ -114,23 +114,16 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 }
 
 /* ─── SCORE BAR ──────────────────────────────────────── */
-#score-bar {
-  display: flex; align-items: center; gap: 0;
-  background: var(--bg); padding: 4px 10px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0; font-size: 11px;
-}
-.sb-player { display: flex; align-items: center; gap: 4px; flex: 1; }
-.sb-player.right { justify-content: flex-end; }
-.sb-name { font-weight: 700; font-size: 12px; color: var(--fg); }
-.sb-dot { color: var(--accent); font-size: 9px; line-height: 1; }
-.sb-dot-empty { display: inline-block; width: 10px; }
-.sb-sets { font-size: 16px; font-weight: 900; color: var(--fg); min-width: 16px; text-align: center; }
-.sb-games { font-size: 12px; font-weight: 600; color: var(--fg2); min-width: 14px; text-align: center; }
-.sb-mid { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
-.sb-pts { font-size: 14px; font-weight: 800; color: var(--accent); min-width: 28px; text-align: center; }
-.sb-sep { color: var(--fg2); font-size: 12px; }
-.sb-match-over { font-weight: 700; color: var(--green); font-size: 12px; text-align: center; flex: 1; }
+/* ─── INLINE SCORE (topbar) ──────────────────────────── */
+.topbar-score { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+.ts-dot { color: var(--accent); font-size: 8px; line-height: 1; width: 10px; text-align: center; }
+.ts-name { font-weight: 700; font-size: 12px; white-space: nowrap; }
+.ts-sets { font-size: 15px; font-weight: 900; color: var(--fg); padding: 0 1px; }
+.ts-games { font-size: 11px; font-weight: 600; color: var(--fg2); }
+.ts-div { color: var(--border); font-size: 11px; padding: 0 2px; }
+.ts-pts { font-size: 12px; font-weight: 800; color: var(--accent); min-width: 20px; text-align: center; }
+.ts-sep { color: var(--fg2); font-size: 11px; }
+.ts-won { font-weight: 700; color: var(--green); font-size: 12px; }
 
 /* ─── LOG SCREEN (landscape 3-col) ──────────────────── */
 #log-screen { padding: 0; height: 100vh; overflow: hidden; }
@@ -139,7 +132,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
   display: grid;
   grid-template-columns: 0.8fr 1.8fr 0.7fr;
   gap: 0;
-  height: calc(100vh - 48px - var(--score-bar-h, 0px) - env(safe-area-inset-top, 0px));
+  height: calc(100vh - 48px - env(safe-area-inset-top, 0px));
   overflow: hidden;
 }
 .log-col {
@@ -585,7 +578,6 @@ h2 { font-size: 1.15rem; font-weight: 700; }
     <button class="topbar-btn" onclick="goScreen('analyse')">Stats</button>
     <button class="topbar-btn red" onclick="goScreen('endmatch')">End</button>
   </div>
-  <div id="score-bar" style="display:none"></div>
   <div class="log-body">
     <!-- LEFT COL -->
     <div class="log-col">
@@ -1219,8 +1211,7 @@ function startMatch() {
   document.getElementById('srv-o').textContent = match.opp;
   document.getElementById('ww-p').textContent  = match.playerName;
   document.getElementById('ww-o').textContent  = match.opp;
-  document.getElementById('topbar-info').textContent =
-    `${match.playerName} vs ${match.opp}`;
+  // topbar-info set by updateScoreBar() below
 
   buildLastShotGrids();
   resetPoint();
@@ -1636,26 +1627,28 @@ function computeScore() {
 }
 
 function updateScoreBar() {
-  const bar = document.getElementById('score-bar');
-  if (!bar) return;
-
-  if (!match.liveScoring) {
-    bar.style.display = 'none';
-    document.documentElement.style.setProperty('--score-bar-h', '0px');
-    return;
-  }
-
-  bar.style.display = 'flex';
-  document.documentElement.style.setProperty('--score-bar-h', '30px');
+  const el = document.getElementById('topbar-info');
+  if (!el) return;
 
   const pName = (match.playerName || 'P').split(' ')[0];
   const oName = (match.opp || 'O').split(' ')[0];
 
+  if (!match.liveScoring) {
+    el.className = 'topbar-title';
+    el.textContent = `${pName} vs ${oName}`;
+    return;
+  }
+
+  el.className = 'topbar-score';
+
   if (!match.points || match.points.length === 0) {
-    bar.innerHTML = `
-      <div class="sb-player"><span class="sb-dot">●</span><span class="sb-name">${pName}</span><span class="sb-sets">0</span><span class="sb-games">0</span></div>
-      <div class="sb-mid"><span class="sb-pts">0</span><span class="sb-sep">–</span><span class="sb-pts">0</span></div>
-      <div class="sb-player right"><span class="sb-games">0</span><span class="sb-sets">0</span><span class="sb-name">${oName}</span><span class="sb-dot-empty"></span></div>`;
+    el.innerHTML = `
+      <span class="ts-dot">●</span><span class="ts-name">${pName}</span>
+      <span class="ts-sets">0</span><span class="ts-games">0</span>
+      <span class="ts-div">|</span>
+      <span class="ts-pts">0</span><span class="ts-sep">–</span><span class="ts-pts">0</span>
+      <span class="ts-div">|</span>
+      <span class="ts-games">0</span><span class="ts-sets">0</span><span class="ts-name">${oName}</span>`;
     return;
   }
 
@@ -1663,13 +1656,13 @@ function updateScoreBar() {
 
   if (s.matchOver) {
     const winner = s.pSets > s.oSets ? pName : oName;
-    bar.innerHTML = `<div class="sb-match-over">🏆 ${winner} won ${s.pSets}–${s.oSets}</div>`;
+    el.innerHTML = `<span class="ts-won">🏆 ${winner} won ${s.pSets}–${s.oSets}</span>`;
     return;
   }
 
   const pServing = s.currentServer === 'P';
-  const pDot = pServing ? '<span class="sb-dot">●</span>' : '<span class="sb-dot-empty"></span>';
-  const oDot = !pServing ? '<span class="sb-dot">●</span>' : '<span class="sb-dot-empty"></span>';
+  const pDot = `<span class="ts-dot">${pServing ? '●' : ''}</span>`;
+  const oDot = `<span class="ts-dot">${!pServing ? '●' : ''}</span>`;
 
   let pPtsStr, oPtsStr;
   if (s.inTiebreak) {
@@ -1687,10 +1680,14 @@ function updateScoreBar() {
     }
   }
 
-  bar.innerHTML = `
-    <div class="sb-player">${pDot}<span class="sb-name">${pName}</span><span class="sb-sets">${s.pSets}</span><span class="sb-games">${s.pGames}</span></div>
-    <div class="sb-mid"><span class="sb-pts">${pPtsStr}</span><span class="sb-sep">–</span><span class="sb-pts">${oPtsStr}</span></div>
-    <div class="sb-player right"><span class="sb-games">${s.oGames}</span><span class="sb-sets">${s.oSets}</span><span class="sb-name">${oName}</span>${oDot}</div>`;
+  el.innerHTML = `
+    ${pDot}<span class="ts-name">${pName}</span>
+    <span class="ts-sets">${s.pSets}</span><span class="ts-games">${s.pGames}</span>
+    <span class="ts-div">|</span>
+    <span class="ts-pts">${pPtsStr}</span><span class="ts-sep">–</span><span class="ts-pts">${oPtsStr}</span>
+    <span class="ts-div">|</span>
+    <span class="ts-games">${s.oGames}</span><span class="ts-sets">${s.oSets}</span>
+    <span class="ts-name">${oName}</span>${oDot}`;
 }
 
 function logPoint(winnerCode) {
