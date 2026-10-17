@@ -1,6 +1,13 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Tennis Logger</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<!-- PWA / Home screen meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tennis Logger">
+<meta name="mobile-web-app-capable" content="yes">
+<link id="apple-touch-icon-link" rel="apple-touch-icon">
+<link id="favicon-link" rel="icon" type="image/png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -2971,6 +2978,69 @@ function downloadStats() {
     .replace(/[^a-z0-9_\-\.]/gi,'_');
   XLSX.writeFile(wb, fname);
 }
+
+/* ─── HOME SCREEN ICON (canvas → apple-touch-icon) ──── */
+(function generateAppIcon() {
+  try {
+    const S = 180;
+    const c = document.createElement('canvas');
+    c.width = c.height = S;
+    const ctx = c.getContext('2d');
+
+    // Background matching app dark theme
+    ctx.fillStyle = '#0d0f14';
+    roundRect(ctx, 0, 0, S, S, 0); // iOS clips corners itself
+    ctx.fill();
+
+    // Tennis ball
+    ctx.beginPath();
+    ctx.arc(90, 90, 72, 0, Math.PI * 2);
+    ctx.fillStyle = '#c8e82a';
+    ctx.fill();
+
+    // Seam lines — cubic bezier matching the SVG
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+
+    // Scale from viewBox 44 → 180: factor = 180/44 ≈ 4.09, center offset = (180-44*4.09)/2 ≈ 0
+    const s = 180 / 44;
+    function sx(x) { return x * s; }
+    function sy(y) { return y * s; }
+
+    // Top seam: M3 22 C6 12, 14 9, 22 14 C30 19, 38 16, 41 22
+    ctx.beginPath();
+    ctx.moveTo(sx(3), sy(22));
+    ctx.bezierCurveTo(sx(6), sy(12), sx(14), sy(9),  sx(22), sy(14));
+    ctx.bezierCurveTo(sx(30), sy(19), sx(38), sy(16), sx(41), sy(22));
+    ctx.stroke();
+
+    // Bottom seam: M3 22 C6 32, 14 35, 22 30 C30 25, 38 28, 41 22
+    ctx.beginPath();
+    ctx.moveTo(sx(3), sy(22));
+    ctx.bezierCurveTo(sx(6), sy(32), sx(14), sy(35), sx(22), sy(30));
+    ctx.bezierCurveTo(sx(30), sy(25), sx(38), sy(28), sx(41), sy(22));
+    ctx.stroke();
+
+    const dataUrl = c.toDataURL('image/png');
+    document.getElementById('apple-touch-icon-link').href = dataUrl;
+    document.getElementById('favicon-link').href = dataUrl;
+  } catch(e) {}
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+})();
 
 /* ─── ROTATE OVERLAY ─────────────────────────────────── */
 let _rotateCb = null;
