@@ -1337,6 +1337,7 @@ function setServer(who) {
   document.getElementById('srv-p').classList.remove('need-tap');
   document.getElementById('srv-o').classList.remove('need-tap');
   checkPointReady();
+  updateScoreBar(); // keep serving dot in sync
 }
 
 function setSide(side) {
@@ -1777,13 +1778,15 @@ function updateScoreBar() {
   el.className = 'topbar-score';
 
   if (!match.points || match.points.length === 0) {
+    const pSrv0 = cur.server !== 'O'; // default dot to Player unless Opp explicitly selected
     el.innerHTML = `
-      <span class="ts-dot">●</span><span class="ts-name">${pName}</span>
+      <span class="ts-dot">${pSrv0 ? '●' : ''}</span><span class="ts-name">${pName}</span>
       <span class="ts-sets">0</span><span class="ts-games">0</span>
       <span class="ts-div">|</span>
       <span class="ts-pts">0</span><span class="ts-sep">–</span><span class="ts-pts">0</span>
       <span class="ts-div">|</span>
-      <span class="ts-games">0</span><span class="ts-sets">0</span><span class="ts-name">${oName}</span>`;
+      <span class="ts-games">0</span><span class="ts-sets">0</span><span class="ts-name">${oName}</span>
+      <span class="ts-dot">${!pSrv0 ? '●' : ''}</span>`;
     return;
   }
 
