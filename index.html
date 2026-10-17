@@ -1640,7 +1640,8 @@ const SHOT_SEQUENCE_COLS = ['Return','Serve+1','Return+1','Serve+2'];
 //  LIVE SCORING
 // ═══════════════════════════════════════════════════════
 
-function computeScore() {
+function computeScore(pts) {
+  if (!pts) pts = match.points || [];
   const fmt = match.format || 'Best of 3';
   const finalFmt = match.finalSetFmt || 'full';
   const isFast4 = fmt === 'Fast4';
@@ -1659,7 +1660,7 @@ function computeScore() {
   let matchOver = false;
   let currentServer = null;
 
-  for (const pt of match.points) {
+  for (const pt of pts) {
     if (matchOver) break;
     currentServer = pt._serverCode;
     const w = pt._winCode;
@@ -1746,6 +1747,20 @@ function computeScore() {
   };
 }
 
+// Who serves the NEXT point given the current score state?
+function nextServerFrom(s) {
+  if (!s || s.matchOver || !s.currentServer) return s ? s.currentServer : null;
+  const tbPts = s.pPts + s.oPts;
+  if (s.inTiebreak) {
+    return (tbPts === 0 || tbPts % 2 === 1)
+      ? (s.currentServer === 'P' ? 'O' : 'P')
+      : s.currentServer;
+  }
+  // Game just ended (pts reset to 0-0)
+  if (s.pPts === 0 && s.oPts === 0) return s.currentServer === 'P' ? 'O' : 'P';
+  return s.currentServer;
+}
+
 function updateScoreBar() {
   const el = document.getElementById('topbar-info');
   if (!el) return;
@@ -1780,7 +1795,8 @@ function updateScoreBar() {
     return;
   }
 
-  const pServing = s.currentServer === 'P';
+  const nextSrv = nextServerFrom(s);
+  const pServing = nextSrv === 'P';
   const pDot = `<span class="ts-dot">${pServing ? '●' : ''}</span>`;
   const oDot = `<span class="ts-dot">${!pServing ? '●' : ''}</span>`;
 
@@ -1897,6 +1913,28 @@ function renderLog() {
     div.className = 'log-item' + (pendingDeleteIdx === i ? ' deleting' : '');
     div.id = 'log-item-' + i;
 
+    // Score at the START of this point (before it was played)
+    const preSt = computeScore(match.points.slice(0, i));
+    const srvCode = pt._serverCode; // 'P' or 'O'
+    const sGames = srvCode === 'P' ? preSt.pGames : preSt.oGames;
+    const rGames = srvCode === 'P' ? preSt.oGames : preSt.pGames;
+    const sPts   = srvCode === 'P' ? preSt.pPts   : preSt.oPts;
+    const rPts   = srvCode === 'P' ? preSt.oPts   : preSt.pPts;
+    let ptScoreStr;
+    if (preSt.inTiebreak) {
+      ptScoreStr = `${sPts}–${rPts}`;
+    } else {
+      const lbl = ['0','15','30','40'];
+      if (sPts >= 3 && rPts >= 3) {
+        if (sPts === rPts)      ptScoreStr = '40–40';
+        else if (sPts > rPts)   ptScoreStr = 'Ad–40';
+        else                    ptScoreStr = '40–Ad';
+      } else {
+        ptScoreStr = `${lbl[Math.min(sPts,3)]||'0'}–${lbl[Math.min(rPts,3)]||'0'}`;
+      }
+    }
+    const gameScoreStr = `${sGames}–${rGames}`;
+
     const shots = [pt.Return, pt['Serve+1'], pt['Return+1'], pt['Serve+2']]
       .filter(Boolean);
     const isAce = pt['Serve outcome'].includes('ACE');
@@ -1921,7 +1959,7 @@ function renderLog() {
     div.innerHTML = `
       <div class="log-item-row1">
         <span class="log-num">#${i+1}</span>
-        <span class="log-meta">${pt.Set} · ${pt.Server.split(' ').pop()} serving · ${pt.Side}</span>
+        <span class="log-meta">${pt.Set} · ${pt.Server.split(' ').pop()} · ${pt.Side} · <strong>${gameScoreStr} &nbsp;${ptScoreStr}</strong></span>
         <span class="log-winner" style="color:${pt._winCode==='P'?'var(--green)':'var(--fg2)'}">${pt.Winner.split(' ').pop()} won</span>
         <button class="log-edit" onclick="openEdit(${i})">Edit</button>
         <button class="log-del" onclick="askDelete(${i})">Delete</button>
