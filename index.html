@@ -492,6 +492,14 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .hand-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .stat-card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); margin-bottom: 2px; }
 .stat-sub { font-size: 11px; font-weight: 600; color: var(--fg2); text-transform: uppercase; letter-spacing: .04em; }
+/* Summary table */
+.summary-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.summary-tbl th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); text-align: center; padding: 0 4px 8px; }
+.summary-tbl th:first-child { text-align: left; color: var(--fg2); }
+.summary-tbl td { padding: 7px 4px; text-align: center; color: var(--fg); border-top: 1px solid var(--border); }
+.summary-tbl td:first-child { text-align: left; color: var(--fg2); font-size: 12px; }
+.summary-tbl tr.st-total td { font-weight: 800; font-size: 14px; border-top: 2px solid var(--border); color: var(--fg); }
+.summary-tbl tr.st-total td:first-child { color: var(--fg2); font-size: 13px; }
 .coaching-card {
   background: linear-gradient(135deg, #1e1b4b, #312e81);
   border: 1px solid #4338ca; border-radius: 14px; padding: 16px;
@@ -2335,7 +2343,63 @@ function renderAnalyse() {
 
   const coaching = getCoachingPoint(match.points, P);
 
+  // Pre-compute values needed for summary table
+  const s1WonPts  = s1In.filter(pt => pt._winCode==='P').length;
+  const s2WonPts  = s2In.filter(pt => pt._winCode==='P').length;
+  const os1WonByO = os1In.filter(pt => pt._winCode==='O').length;
+  const os2WonByO = os2In.filter(pt => pt._winCode==='O').length;
+  const pWinners  = lsWinnerPts.length + sAce.length;
+  const oWinners  = lsOppWinPts.length + oAce.length;
+  const pErrors   = lsPlayerErrPts.length;
+  const oErrors   = lsOppErrPts.length;
+
+  // Break point summary (needs score columns)
+  const scoreData = computeScoreColumns(match.points, P, O);
+  const bpSum = { pConv:{won:0,total:0}, oConv:{won:0,total:0} };
+  for (let i = 0; i < match.points.length; i++) {
+    const pt = match.points[i];
+    const sc = scoreData[i];
+    if (!sc || sc.Mode !== 'NORMAL') continue;
+    const isServerP = sc.ServerIsPlayer;
+    const playerWon = pt._winCode === 'P';
+    if (isServerP && sc.IsBreakPoint) {
+      bpSum.oConv.total++;
+      if (!playerWon) bpSum.oConv.won++;
+    }
+    if (!isServerP && sc.IsBreakPoint) {
+      bpSum.pConv.total++;
+      if (playerWon) bpSum.pConv.won++;
+    }
+  }
+  function bpCell(won, total) {
+    if (!total) return '—';
+    return `${won}/${total} (${pct(won,total)}%)`;
+  }
+  function pctCell(n, d) { return d ? pct(n,d)+'%' : '—'; }
+
   let html = '';
+
+  // ── 0. Summary Table ──
+  html += `<div class="stat-card">
+    <table class="summary-tbl">
+      <thead><tr>
+        <th></th>
+        <th>${P}</th>
+        <th>${O}</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>Aces</td><td>${sAce.length}</td><td>${oAce.length}</td></tr>
+        <tr><td>Double Faults</td><td>${sDFs.length}</td><td>${oDFs.length}</td></tr>
+        <tr><td>1st Serve %</td><td>${pctCell(s1In.length, pS.length)}</td><td>${pctCell(os1In.length, oS.length)}</td></tr>
+        <tr><td>1st Serve Won %</td><td>${pctCell(s1WonPts, s1In.length)}</td><td>${pctCell(os1WonByO, os1In.length)}</td></tr>
+        <tr><td>2nd Serve Won %</td><td>${pctCell(s2WonPts, s2In.length)}</td><td>${pctCell(os2WonByO, os2In.length)}</td></tr>
+        <tr><td>Break Pts Won</td><td>${bpCell(bpSum.pConv.won, bpSum.pConv.total)}</td><td>${bpCell(bpSum.oConv.won, bpSum.oConv.total)}</td></tr>
+        <tr><td>Winners</td><td>${pWinners}</td><td>${oWinners}</td></tr>
+        <tr><td>Errors</td><td>${pErrors}</td><td>${oErrors}</td></tr>
+        <tr class="st-total"><td>Points Won</td><td>${pWon}</td><td>${n - pWon}</td></tr>
+      </tbody>
+    </table>
+  </div>`;
 
   // ── 1. Overall ──
   html += `<div class="stat-card"><div class="stat-card-title">Overall</div>
@@ -2344,8 +2408,6 @@ function renderAnalyse() {
   </div>`;
 
   // ── 2. Player Serve ──
-  const s1WonPts = s1In.filter(pt => pt._winCode==='P').length;
-  const s2WonPts = s2In.filter(pt => pt._winCode==='P').length;
   const sAllWon  = pS.filter(pt => pt._winCode==='P').length;
   html += `<div class="stat-card"><div class="stat-card-title">${P} — Serve</div>
     ${barRow('1st serve in', s1In.length, pS.length)}
@@ -2432,7 +2494,6 @@ function renderAnalyse() {
   }
 
   // ── 9. Score Analysis ──
-  const scoreData = computeScoreColumns(match.points, P, O);
   if (scoreData.length) {
     // Player serving: win % by score situation
     const SIT_ORDER = ['0-0','15-0','0-15','30-0','15-15','0-30','40-0','30-15','15-30','0-40','Deuce','Ad Server','Ad Returner','Break point','Server game pt'];
