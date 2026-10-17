@@ -1326,6 +1326,9 @@ function resetPoint() {
   showAceDir(false);
   document.getElementById('finish-btn').disabled = true;
   document.getElementById('undo-btn').disabled = true;
+
+  // Auto-preset server / side / set when live scoring is on
+  if (match.liveScoring) preselectInputs();
 }
 
 function setServer(who) {
@@ -1347,6 +1350,74 @@ function setSide(side) {
 }
 
 function setState(val) { cur.set = val; }
+
+function preselectInputs() {
+  // Only run when live scoring is active and at least one point has been logged
+  if (!match.liveScoring || !match.points || match.points.length === 0) return;
+
+  const s = computeScore();
+  if (s.matchOver || !s.currentServer) return;
+
+  // ── Determine who serves NEXT ────────────────────────────────────────────
+  // s.currentServer = server of the LAST logged point.
+  // A game just ended when pPts===0 && oPts===0 (and not tiebreak start);
+  // a tiebreak switches after the 1st point then every 2.
+  const tbPts = s.pPts + s.oPts; // points played so far in current game/TB
+  let nextServer;
+
+  if (s.inTiebreak) {
+    if (tbPts === 0) {
+      // TB just triggered — first TB point goes to the OTHER player
+      nextServer = s.currentServer === 'P' ? 'O' : 'P';
+    } else if (tbPts % 2 === 1) {
+      // Odd TB point just played → switch server
+      nextServer = s.currentServer === 'P' ? 'O' : 'P';
+    } else {
+      // Even TB point just played → same server continues
+      nextServer = s.currentServer;
+    }
+  } else if (s.pPts === 0 && s.oPts === 0) {
+    // Regular game just ended → server alternates
+    nextServer = s.currentServer === 'P' ? 'O' : 'P';
+  } else {
+    // Mid-game → same server
+    nextServer = s.currentServer;
+  }
+
+  setServer(nextServer);
+
+  // ── Side (Deuce = even total pts, Ad = odd) ──────────────────────────────
+  setSide(tbPts % 2 === 0 ? 'Deuce' : 'Ad');
+
+  // ── Set selector ─────────────────────────────────────────────────────────
+  const setNum = s.pSets + s.oSets + 1; // 1-based current set number
+  const fmt    = match.format      || 'Best of 3';
+  const finFmt = match.finalSetFmt || 'full';
+
+  let setVal;
+  if (setNum === 1) {
+    setVal = '1st set';
+  } else if (setNum === 2) {
+    setVal = '2nd set';
+  } else if (setNum === 3) {
+    // Bo3 final set: match-tiebreaker or full set; Fast4 3rd set = match-TB
+    if (fmt === 'Fast4' || (fmt === 'Best of 3' && finFmt === 'matchtb')) {
+      setVal = 'Match-tiebreaker';
+    } else {
+      setVal = '3rd set';
+    }
+  } else {
+    // Bo5 4th/5th or any edge-case beyond 3 sets → fall back to Match-TB option
+    setVal = 'Match-tiebreaker';
+  }
+
+  const sel = document.getElementById('set-sel');
+  if (sel && sel.value !== setVal) {
+    sel.value = setVal;
+    setState(setVal);
+  }
+}
+
 function showSet() {
   const sel = document.getElementById('set-sel');
   sel.focus();
