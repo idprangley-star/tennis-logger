@@ -1583,7 +1583,7 @@ function renderLog() {
   });
 
   // scroll to bottom so most recent point is visible immediately
-  list.scrollTop = list.scrollHeight;
+  requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
 
   // update delete bar
   if (pendingDeleteIdx !== null) {
