@@ -44,6 +44,7 @@
 body {
   background: var(--bg); color: var(--fg);
   font-family: 'Inter', system-ui, sans-serif; font-size: 15px;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   min-height: 100vh;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -958,11 +959,11 @@ let cur = {
 
 const LS_WINNERS = [
   'FH winner','BH winner',
+  'Return FH winner','Return BH winner',
   'Volley FH winner','Volley BH winner',
   'Smash winner',
   'Drop shot winner FH','Drop shot winner BH',
   'Dead net cord winner',
-  'Return FH winner','Return BH winner',
   'Passing FH winner','Passing BH winner',
   'Lob FH winner','Lob BH winner',
   'Drive volley FH winner','Drive volley BH winner'
@@ -970,11 +971,11 @@ const LS_WINNERS = [
 const LS_ERRORS = [
   'FH unforced error','BH unforced error',
   'FH forced error','BH forced error',
+  'Return FH unforced error','Return BH unforced error',
+  'Return FH forced error','Return BH forced error',
   'Volley FH error','Volley BH error',
   'Smash error',
   'Drop shot error FH','Drop shot error BH',
-  'Return FH unforced error','Return BH unforced error',
-  'Return FH forced error','Return BH forced error',
   'Passing FH unforced error','Passing BH unforced error',
   'Passing FH forced error','Passing BH forced error',
   'Lob FH error','Lob BH error',
@@ -1552,14 +1553,19 @@ function renderLog() {
     const isDF  = pt['Serve outcome'] === 'Double fault';
 
     let psfHtml = `<span class="psf-pill ${isAce?'ace':isDF?'df':'normal'}" style="font-size:11px">${pt['Serve outcome']}</span>`;
-    if (isAce && pt['Where']) psfHtml += ` <span class="psf-pill ace" style="font-size:11px">${pt['Where']}</span>`;
+    if (isAce && pt['ACE direction']) psfHtml += ` <span class="psf-pill ace" style="font-size:11px">${pt['ACE direction']}</span>`;
+    if (pt['1st serve fault']) psfHtml += ` <span class="psf-pill df" style="font-size:11px">F1: ${pt['1st serve fault']}</span>`;
+    if (pt['Double fault']) psfHtml += ` <span class="psf-pill df" style="font-size:11px">DF: ${pt['Double fault']}</span>`;
     shots.forEach(s => {
       const cls = SHOT_CLASS[s] || 'fh';
       psfHtml += ` <span class="psf-pill ${cls}" style="font-size:11px">${SHOT_LABELS[s]||s}</span>`;
     });
 
+    const forcingHtml = pt['2nd last shot']
+      ? `<div class="log-lastshot" style="font-size:11px">🎾 ${pt['2nd last shot']}</div>`
+      : '';
     const lastShotHtml = pt['Last shot']
-      ? `<div class="log-lastshot">💥 ${pt['Last shot']}${pt.Where ? ' · ' + pt.Where : ''}</div>`
+      ? `<div class="log-lastshot" style="font-size:11px">💥 ${pt['Last shot']}${pt.Where ? ' · ' + pt.Where : ''}</div>`
       : '';
 
     div.innerHTML = `
@@ -1571,10 +1577,13 @@ function renderLog() {
         <button class="log-del" onclick="askDelete(${i})">Delete</button>
       </div>
       <div class="log-shots">${psfHtml}</div>
-      ${lastShotHtml}
+      ${forcingHtml}${lastShotHtml}
     `;
     list.appendChild(div);
   });
+
+  // scroll to bottom so most recent point is visible immediately
+  list.scrollTop = list.scrollHeight;
 
   // update delete bar
   if (pendingDeleteIdx !== null) {
