@@ -1385,8 +1385,14 @@ function preselectInputs() {
 
   setServer(nextServer);
 
-  // ── Side (Deuce = even total pts, Ad = odd) ──────────────────────────────
-  setSide(tbPts % 2 === 0 ? 'Deuce' : 'Ad');
+  // ── Side ─────────────────────────────────────────────────────────────────
+  // Fast4 deuce (3-3): returner chooses side — leave both buttons pulsing
+  const isFast4Deuce = (match.format === 'Fast4') && !s.inTiebreak
+                       && s.pPts === 3 && s.oPts === 3;
+  if (!isFast4Deuce) {
+    setSide(tbPts % 2 === 0 ? 'Deuce' : 'Ad');
+  }
+  // else: side buttons stay with need-tap amber pulse from resetPoint()
 
   // ── Set selector ─────────────────────────────────────────────────────────
   const setNum = s.pSets + s.oSets + 1; // 1-based current set number
@@ -1785,7 +1791,7 @@ function updateScoreBar() {
   } else {
     const lbl = ['0','15','30','40'];
     if (s.pPts >= 3 && s.oPts >= 3) {
-      if (s.pPts === s.oPts) { pPtsStr = 'D'; oPtsStr = 'D'; }
+      if (s.pPts === s.oPts) { pPtsStr = '40'; oPtsStr = '40'; }
       else if (s.pPts > s.oPts) { pPtsStr = 'Ad'; oPtsStr = ''; }
       else { pPtsStr = ''; oPtsStr = 'Ad'; }
     } else {
