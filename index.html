@@ -93,35 +93,6 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 .setup-logo span { font-size: 2rem; }
 
 /* ─── ROTATE OVERLAY ────────────────────────────────── */
-/* ─── CATCH-UP OVERLAY ───────────────────────────────── */
-#catchup-overlay {
-  display: none; position: fixed; inset: 0; z-index: 1000;
-  background: rgba(0,0,0,0.9);
-  flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-  padding: 28px 20px;
-}
-#catchup-overlay.show { display: flex; }
-.cu-header { color: #f90; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
-.cu-score {
-  color: #fff; font-size: 16px; font-weight: 800;
-  background: rgba(255,255,255,.12); padding: 10px 22px;
-  border-radius: 10px; text-align: center; min-width: 200px;
-}
-.cu-note { color: rgba(255,255,255,.55); font-size: 12px; text-align: center; max-width: 280px; line-height: 1.4; }
-.cu-btns { display: flex; gap: 14px; width: 100%; max-width: 340px; }
-.cu-btn {
-  flex: 1; padding: 28px 10px; border-radius: 14px;
-  font-size: 17px; font-weight: 800; border: none; color: #fff;
-  background: var(--green);
-}
-.cu-btn.opp { background: var(--accent); }
-.cu-count { color: rgba(255,255,255,.7); font-size: 13px; font-weight: 600; }
-.cu-done {
-  margin-top: 4px; padding: 13px 44px; border-radius: 12px;
-  background: rgba(255,255,255,.15); color: #fff;
-  font-size: 16px; font-weight: 700; border: 1px solid rgba(255,255,255,.25);
-}
-
 #rotate-overlay {
   display: none; position: fixed; inset: 0; z-index: 9999;
   background: var(--bg);
@@ -636,7 +607,6 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 <div id="log-screen" class="screen">
   <div class="topbar">
     <span class="topbar-title" id="topbar-info">Match</span>
-    <button class="topbar-btn" onclick="openCatchup()">⚡</button>
     <button class="topbar-btn" onclick="goScreen('pointlog')">Log</button>
     <button class="topbar-btn" onclick="goScreen('analyse')">Stats</button>
     <button class="topbar-btn red" onclick="goScreen('endmatch')">End</button>
@@ -1921,19 +1891,6 @@ function renderLog() {
     div.className = 'log-item' + (pendingDeleteIdx === i ? ' deleting' : '');
     div.id = 'log-item-' + i;
 
-    // ── Catch-up points get a minimal display ──
-    if (pt._catchup) {
-      div.innerHTML = `
-        <div class="log-item-row1">
-          <span class="log-num">#${i+1}</span>
-          <span class="log-meta" style="color:#f90">⚡ catch-up · ${pt.Set}</span>
-          <span class="log-winner" style="color:${pt._winCode==='P'?'var(--green)':'var(--fg2)'}">${pt.Winner.split(' ').pop()} won</span>
-          <button class="log-del" onclick="askDelete(${i})">Delete</button>
-        </div>`;
-      list.appendChild(div);
-      return;
-    }
-
     const shots = [pt.Return, pt['Serve+1'], pt['Return+1'], pt['Serve+2']]
       .filter(Boolean);
     const isAce = pt['Serve outcome'].includes('ACE');
@@ -2739,8 +2696,7 @@ function serveDirection(side, returnShot, receiverHand) {
 //  STATS ENGINE
 // ═══════════════════════════════════════════════════════
 function computeStats() {
-  // Exclude catch-up points from all stats — they have no shot detail
-  const pts = match.points.filter(pt => !pt._catchup);
+  const pts = match.points;
   const n = pts.length;
   if (!n) return null;
   const NET = ['FH volley','BH volley','Smash'];
@@ -3074,114 +3030,6 @@ function downloadStats() {
   XLSX.writeFile(wb, fname);
 }
 
-/* ─── ROTATE OVERLAY ─────────────────────────────────── */
-// ─── CATCH-UP QUICK-LOG ──────────────────────────────────────────────────────
-let _catchupCount = 0;
-
-function openCatchup() {
-  _catchupCount = 0;
-  updateCatchupUI();
-  document.getElementById('catchup-overlay').classList.add('show');
-}
-
-function closeCatchup() {
-  document.getElementById('catchup-overlay').classList.remove('show');
-  // Re-run preselect so the normal log screen is in the right state
-  if (match.liveScoring) preselectInputs();
-}
-
-function updateCatchupUI() {
-  const pName = (match.playerName || 'Player').split(' ')[0];
-  const oName = (match.opp || 'Opp').split(' ')[0];
-  // Button labels
-  document.getElementById('cu-p').textContent = pName + ' won';
-  document.getElementById('cu-o').textContent = oName + ' won';
-  // Score
-  const scoreEl = document.getElementById('cu-score');
-  if (!match.points || match.points.length === 0) {
-    scoreEl.textContent = '0 – 0';
-  } else {
-    const s = computeScore();
-    if (s.matchOver) {
-      const w = s.pSets > s.oSets ? pName : oName;
-      scoreEl.textContent = `🏆 ${w} won ${s.pSets}–${s.oSets}`;
-    } else {
-      const tb = s.inTiebreak;
-      let pp, op;
-      if (!tb && s.pPts >= 3 && s.oPts >= 3) {
-        pp = s.pPts === s.oPts ? 'D' : (s.pPts > s.oPts ? 'Ad' : '—');
-        op = s.pPts === s.oPts ? 'D' : (s.oPts > s.pPts ? 'Ad' : '—');
-      } else {
-        const lbl = ['0','15','30','40'];
-        pp = tb ? String(s.pPts) : (lbl[Math.min(s.pPts,3)] || '0');
-        op = tb ? String(s.oPts) : (lbl[Math.min(s.oPts,3)] || '0');
-      }
-      const srv = s.currentServer === 'P' ? pName : oName;
-      scoreEl.textContent = `${pName} ${s.pSets}-${s.oSets} ${s.pGames}-${s.oGames}  ${pp}–${op}  ${oName}  (${srv} serving)`;
-    }
-  }
-  // Count
-  const countEl = document.getElementById('cu-count');
-  countEl.textContent = _catchupCount === 0
-    ? 'No catch-up points logged yet'
-    : `${_catchupCount} catch-up point${_catchupCount === 1 ? '' : 's'} added`;
-}
-
-function _nextServerForCatchup() {
-  // Identical logic to preselectInputs() but returns the code without touching UI
-  if (!match.points || match.points.length === 0) return null;
-  const s = computeScore();
-  if (s.matchOver || !s.currentServer) return null;
-  const tbPts = s.pPts + s.oPts;
-  if (s.inTiebreak) {
-    return (tbPts === 0 || tbPts % 2 === 1)
-      ? (s.currentServer === 'P' ? 'O' : 'P')
-      : s.currentServer;
-  }
-  return (s.pPts === 0 && s.oPts === 0)
-    ? (s.currentServer === 'P' ? 'O' : 'P')
-    : s.currentServer;
-}
-
-function logCatchupPoint(winCode) {
-  const serverCode = _nextServerForCatchup();
-  const serverName = serverCode === 'P' ? (match.playerName||'P') : (match.opp||'O');
-  const winnerName = winCode === 'P' ? (match.playerName||'P') : (match.opp||'O');
-
-  // Determine current set value (same logic as preselectInputs)
-  let setVal = cur.set;
-  if (match.points.length > 0) {
-    const s = computeScore();
-    const sn = s.pSets + s.oSets + 1;
-    const fmt    = match.format      || 'Best of 3';
-    const finFmt = match.finalSetFmt || 'full';
-    if      (sn === 1) setVal = '1st set';
-    else if (sn === 2) setVal = '2nd set';
-    else if (sn === 3) setVal = (fmt === 'Fast4' || (fmt === 'Best of 3' && finFmt === 'matchtb')) ? 'Match-tiebreaker' : '3rd set';
-    else               setVal = 'Match-tiebreaker';
-  }
-
-  match.points.push({
-    Date: match.date || '', Tournament: match.tourn || '',
-    Surface: match.surface || '', Environment: match.env || '',
-    Set: setVal, Server: serverName, Side: '',
-    'Serve outcome': '', '1st serve fault': '', 'Double fault': '',
-    'ACE direction': '', Return: '', 'Serve+1': '', 'Return+1': '', 'Serve+2': '',
-    Winner: winnerName, 'Last shot': '', '2nd last shot': '', Where: '',
-    _winCode: winCode, _serverCode: serverCode, _catchup: true
-  });
-
-  saveMatch();
-  updateScoreBar();
-  _catchupCount++;
-  updateCatchupUI();
-
-  // Auto-close if match just ended
-  if (computeScore().matchOver) {
-    setTimeout(closeCatchup, 900);
-  }
-}
-
 // ─── ROTATE OVERLAY ───────────────────────────────────────────────────────────
 let _rotateCb = null;
 function showRotateOverlay(cb) {
@@ -3206,21 +3054,6 @@ function dismissRotateOverlay() {
   if (_rotateCb) { const cb = _rotateCb; _rotateCb = null; cb(); }
 }
 </script>
-
-<!-- ═══════════════════════════════════════════════════ -->
-<!--  CATCH-UP OVERLAY                                    -->
-<!-- ═══════════════════════════════════════════════════ -->
-<div id="catchup-overlay">
-  <div class="cu-header">⚡ Catch-up mode</div>
-  <div class="cu-score" id="cu-score">—</div>
-  <div class="cu-note">Tap who won each missed point — no shot detail is recorded</div>
-  <div class="cu-btns">
-    <button class="cu-btn" id="cu-p" onclick="logCatchupPoint('P')">Player won</button>
-    <button class="cu-btn opp" id="cu-o" onclick="logCatchupPoint('O')">Opp won</button>
-  </div>
-  <div class="cu-count" id="cu-count"></div>
-  <button class="cu-done" onclick="closeCatchup()">Done ✓</button>
-</div>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <!--  ROTATE OVERLAY                                      -->
