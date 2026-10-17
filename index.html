@@ -113,6 +113,25 @@ h2 { font-size: 1.15rem; font-weight: 700; }
   font-size: 17px; font-weight: 800; border-radius: 14px;
 }
 
+/* ─── SCORE BAR ──────────────────────────────────────── */
+#score-bar {
+  display: flex; align-items: center; gap: 0;
+  background: var(--bg); padding: 4px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; font-size: 11px;
+}
+.sb-player { display: flex; align-items: center; gap: 4px; flex: 1; }
+.sb-player.right { justify-content: flex-end; }
+.sb-name { font-weight: 700; font-size: 12px; color: var(--fg); }
+.sb-dot { color: var(--accent); font-size: 9px; line-height: 1; }
+.sb-dot-empty { display: inline-block; width: 10px; }
+.sb-sets { font-size: 16px; font-weight: 900; color: var(--fg); min-width: 16px; text-align: center; }
+.sb-games { font-size: 12px; font-weight: 600; color: var(--fg2); min-width: 14px; text-align: center; }
+.sb-mid { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
+.sb-pts { font-size: 14px; font-weight: 800; color: var(--accent); min-width: 28px; text-align: center; }
+.sb-sep { color: var(--fg2); font-size: 12px; }
+.sb-match-over { font-weight: 700; color: var(--green); font-size: 12px; text-align: center; flex: 1; }
+
 /* ─── LOG SCREEN (landscape 3-col) ──────────────────── */
 #log-screen { padding: 0; height: 100vh; overflow: hidden; }
 #log-screen .topbar { flex-shrink: 0; }
@@ -120,7 +139,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
   display: grid;
   grid-template-columns: 0.8fr 1.8fr 0.7fr;
   gap: 0;
-  height: calc(100vh - 48px - env(safe-area-inset-top, 0px));
+  height: calc(100vh - 48px - var(--score-bar-h, 0px) - env(safe-area-inset-top, 0px));
   overflow: hidden;
 }
 .log-col {
@@ -531,10 +550,24 @@ h2 { font-size: 1.15rem; font-weight: 700; }
       </div>
     </div>
     <div class="form-row">
-      <div class="form-label">Sets format</div>
+      <div class="form-label">Match format</div>
       <div class="btn-group">
+        <button class="opt-btn" data-group="sets" data-val="Fast4" onclick="pickOpt(this)">Fast 4</button>
         <button class="opt-btn" data-group="sets" data-val="Best of 3" onclick="pickOpt(this)">Best of 3</button>
         <button class="opt-btn" data-group="sets" data-val="Best of 5" onclick="pickOpt(this)">Best of 5</button>
+      </div>
+    </div>
+    <div class="form-row" id="final-set-row" style="display:none">
+      <div class="form-label">Final set</div>
+      <div class="btn-group" id="final-set-btns">
+        <!-- populated by pickOpt when format changes -->
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-label">Live scoring</div>
+      <div class="btn-group">
+        <button class="opt-btn" data-group="livescore" data-val="on" onclick="pickOpt(this)">On</button>
+        <button class="opt-btn" data-group="livescore" data-val="off" onclick="pickOpt(this)">Off</button>
       </div>
     </div>
     <button class="start-btn" id="start-btn" disabled onclick="startMatch()">Start Match →</button>
@@ -552,6 +585,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
     <button class="topbar-btn" onclick="goScreen('analyse')">Stats</button>
     <button class="topbar-btn red" onclick="goScreen('endmatch')">End</button>
   </div>
+  <div id="score-bar" style="display:none"></div>
   <div class="log-body">
     <!-- LEFT COL -->
     <div class="log-col">
@@ -1109,7 +1143,7 @@ function goScreen(id) {
 // ═══════════════════════════════════════════════════════
 //  SETUP
 // ═══════════════════════════════════════════════════════
-let setupVals = { env: null, surf: null, sets: null };
+let setupVals = { env: null, surf: null, sets: null, livescore: 'off', finalset: null };
 
 function pickOpt(btn) {
   const group = btn.dataset.group;
@@ -1117,7 +1151,30 @@ function pickOpt(btn) {
   btn.classList.add('sel');
   if (group === 'env') setupVals.env = btn.dataset.val;
   if (group === 'surf') setupVals.surf = btn.dataset.val;
-  if (group === 'sets') setupVals.sets = btn.dataset.val;
+  if (group === 'livescore') setupVals.livescore = btn.dataset.val;
+  if (group === 'finalset') setupVals.finalset = btn.dataset.val;
+  if (group === 'sets') {
+    setupVals.sets = btn.dataset.val;
+    setupVals.finalset = null;
+    const row = document.getElementById('final-set-row');
+    const btns = document.getElementById('final-set-btns');
+    if (btn.dataset.val === 'Best of 3') {
+      btns.innerHTML = `
+        <button class="opt-btn" data-group="finalset" data-val="full" onclick="pickOpt(this)">Full set</button>
+        <button class="opt-btn" data-group="finalset" data-val="matchtb" onclick="pickOpt(this)">Match tiebreak</button>`;
+      row.style.display = '';
+    } else if (btn.dataset.val === 'Best of 5') {
+      btns.innerHTML = `
+        <button class="opt-btn" data-group="finalset" data-val="full" onclick="pickOpt(this)">Full 5th set</button>
+        <button class="opt-btn" data-group="finalset" data-val="matchtb" onclick="pickOpt(this)">10pt TB at 6-6</button>`;
+      row.style.display = '';
+    } else {
+      // Fast4 — deciding set is always match tiebreak, no choice
+      btns.innerHTML = '';
+      row.style.display = 'none';
+      setupVals.finalset = 'matchtb';
+    }
+  }
   checkStartEnabled();
 }
 
@@ -1131,7 +1188,10 @@ function setHand(who, val, btn) {
 function checkStartEnabled() {
   const p = document.getElementById('s-player').value.trim();
   const o = document.getElementById('s-opp').value.trim();
-  const ok = p && o && setupVals.env && setupVals.surf && setupVals.sets;
+  // Final set required for Bo3/Bo5 only (Fast4 auto-sets it)
+  const needFinalSet = setupVals.sets === 'Best of 3' || setupVals.sets === 'Best of 5';
+  const finalSetOk = !needFinalSet || !!setupVals.finalset;
+  const ok = p && o && setupVals.env && setupVals.surf && setupVals.sets && finalSetOk;
   document.getElementById('start-btn').disabled = !ok;
 }
 
@@ -1149,6 +1209,9 @@ function startMatch() {
   match.sets  = setupVals.sets;
   match.playerHand = setupHands.p;
   match.oppHand    = setupHands.o;
+  match.liveScoring = setupVals.livescore === 'on';
+  match.format    = setupVals.sets;    // 'Fast4' | 'Best of 3' | 'Best of 5'
+  match.finalSetFmt = setupVals.finalset; // 'full' | 'matchtb'
   match.points = [];
 
   // Set server buttons labels
@@ -1163,6 +1226,7 @@ function startMatch() {
   resetPoint();
   goScreen('log-screen');
   loadSavedMatch();
+  updateScoreBar();
 }
 
 function loadSavedMatch() {
@@ -1461,6 +1525,174 @@ function commitPoint() {
 
 const SHOT_SEQUENCE_COLS = ['Return','Serve+1','Return+1','Serve+2'];
 
+// ═══════════════════════════════════════════════════════
+//  LIVE SCORING
+// ═══════════════════════════════════════════════════════
+
+function computeScore() {
+  const fmt = match.format || 'Best of 3';
+  const finalFmt = match.finalSetFmt || 'full';
+  const isFast4 = fmt === 'Fast4';
+  const isBo5 = fmt === 'Best of 5';
+  const setsToWin = isBo5 ? 3 : 2;
+  const gamesTarget = isFast4 ? 4 : 6;
+  const shortDeuce = isFast4;
+  const tbAt = isFast4 ? (gamesTarget - 1) : gamesTarget; // 3-3 or 6-6
+
+  let pSets = 0, oSets = 0;
+  let pGames = 0, oGames = 0;
+  let pPts = 0, oPts = 0;
+  let inSetTB = false;
+  let inMatchTB = false;
+  let inFinalSetTB = false;
+  let matchOver = false;
+  let currentServer = null;
+
+  for (const pt of match.points) {
+    if (matchOver) break;
+    currentServer = pt._serverCode;
+    const w = pt._winCode;
+    const totalSets = setsToWin * 2 - 1;
+    const decSet = (pSets + oSets) === (totalSets - 1);
+
+    // Entire deciding set is a match tiebreak?
+    const isMatchTBSet = decSet && (isFast4 || (!isBo5 && finalFmt === 'matchtb'));
+    if (isMatchTBSet && !inMatchTB && !inSetTB && !inFinalSetTB) {
+      inMatchTB = true; pPts = 0; oPts = 0;
+    }
+
+    if (inMatchTB) {
+      if (w === 'P') pPts++; else oPts++;
+      if ((pPts >= 10 || oPts >= 10) && Math.abs(pPts - oPts) >= 2) {
+        if (pPts > oPts) pSets++; else oSets++;
+        inMatchTB = false; matchOver = true;
+      }
+      continue;
+    }
+
+    if (inFinalSetTB) {
+      if (w === 'P') pPts++; else oPts++;
+      if ((pPts >= 10 || oPts >= 10) && Math.abs(pPts - oPts) >= 2) {
+        if (pPts > oPts) pSets++; else oSets++;
+        inFinalSetTB = false; matchOver = true;
+      }
+      continue;
+    }
+
+    if (inSetTB) {
+      if (w === 'P') pPts++; else oPts++;
+      if ((pPts >= 7 || oPts >= 7) && Math.abs(pPts - oPts) >= 2) {
+        if (pPts > oPts) pSets++; else oSets++;
+        pGames = 0; oGames = 0; pPts = 0; oPts = 0;
+        inSetTB = false;
+        if (pSets >= setsToWin || oSets >= setsToWin) matchOver = true;
+      }
+      continue;
+    }
+
+    // Regular game point
+    if (w === 'P') pPts++; else oPts++;
+
+    let gameWon = null;
+    if (shortDeuce) {
+      if (pPts >= 4 && pPts - oPts >= 2) gameWon = 'P';
+      else if (oPts >= 4 && oPts - pPts >= 2) gameWon = 'O';
+      else if (pPts === 4 && oPts === 3) gameWon = 'P';
+      else if (oPts === 4 && pPts === 3) gameWon = 'O';
+    } else {
+      if (pPts >= 4 && pPts - oPts >= 2) gameWon = 'P';
+      else if (oPts >= 4 && oPts - pPts >= 2) gameWon = 'O';
+    }
+
+    if (gameWon) {
+      if (gameWon === 'P') pGames++; else oGames++;
+      pPts = 0; oPts = 0;
+
+      if (pGames === tbAt && oGames === tbAt) {
+        if (isBo5 && decSet && finalFmt === 'matchtb') {
+          inFinalSetTB = true; pPts = 0; oPts = 0;
+        } else {
+          inSetTB = true; pPts = 0; oPts = 0;
+        }
+      } else {
+        const pWin = pGames >= gamesTarget && pGames - oGames >= 2;
+        const oWin = oGames >= gamesTarget && oGames - pGames >= 2;
+        if (pWin) {
+          pSets++; pGames = 0; oGames = 0;
+          if (pSets >= setsToWin) matchOver = true;
+        } else if (oWin) {
+          oSets++; pGames = 0; oGames = 0;
+          if (oSets >= setsToWin) matchOver = true;
+        }
+      }
+    }
+  }
+
+  return {
+    pSets, oSets, pGames, oGames, pPts, oPts,
+    inTiebreak: inSetTB || inMatchTB || inFinalSetTB,
+    matchOver, currentServer
+  };
+}
+
+function updateScoreBar() {
+  const bar = document.getElementById('score-bar');
+  if (!bar) return;
+
+  if (!match.liveScoring) {
+    bar.style.display = 'none';
+    document.documentElement.style.setProperty('--score-bar-h', '0px');
+    return;
+  }
+
+  bar.style.display = 'flex';
+  document.documentElement.style.setProperty('--score-bar-h', '30px');
+
+  const pName = (match.playerName || 'P').split(' ')[0];
+  const oName = (match.opp || 'O').split(' ')[0];
+
+  if (!match.points || match.points.length === 0) {
+    bar.innerHTML = `
+      <div class="sb-player"><span class="sb-dot">●</span><span class="sb-name">${pName}</span><span class="sb-sets">0</span><span class="sb-games">0</span></div>
+      <div class="sb-mid"><span class="sb-pts">0</span><span class="sb-sep">–</span><span class="sb-pts">0</span></div>
+      <div class="sb-player right"><span class="sb-games">0</span><span class="sb-sets">0</span><span class="sb-name">${oName}</span><span class="sb-dot-empty"></span></div>`;
+    return;
+  }
+
+  const s = computeScore();
+
+  if (s.matchOver) {
+    const winner = s.pSets > s.oSets ? pName : oName;
+    bar.innerHTML = `<div class="sb-match-over">🏆 ${winner} won ${s.pSets}–${s.oSets}</div>`;
+    return;
+  }
+
+  const pServing = s.currentServer === 'P';
+  const pDot = pServing ? '<span class="sb-dot">●</span>' : '<span class="sb-dot-empty"></span>';
+  const oDot = !pServing ? '<span class="sb-dot">●</span>' : '<span class="sb-dot-empty"></span>';
+
+  let pPtsStr, oPtsStr;
+  if (s.inTiebreak) {
+    pPtsStr = String(s.pPts);
+    oPtsStr = String(s.oPts);
+  } else {
+    const lbl = ['0','15','30','40'];
+    if (s.pPts >= 3 && s.oPts >= 3) {
+      if (s.pPts === s.oPts) { pPtsStr = 'D'; oPtsStr = 'D'; }
+      else if (s.pPts > s.oPts) { pPtsStr = 'Ad'; oPtsStr = ''; }
+      else { pPtsStr = ''; oPtsStr = 'Ad'; }
+    } else {
+      pPtsStr = lbl[Math.min(s.pPts, 3)] || '0';
+      oPtsStr = lbl[Math.min(s.oPts, 3)] || '0';
+    }
+  }
+
+  bar.innerHTML = `
+    <div class="sb-player">${pDot}<span class="sb-name">${pName}</span><span class="sb-sets">${s.pSets}</span><span class="sb-games">${s.pGames}</span></div>
+    <div class="sb-mid"><span class="sb-pts">${pPtsStr}</span><span class="sb-sep">–</span><span class="sb-pts">${oPtsStr}</span></div>
+    <div class="sb-player right"><span class="sb-games">${s.oGames}</span><span class="sb-sets">${s.oSets}</span><span class="sb-name">${oName}</span>${oDot}</div>`;
+}
+
 function logPoint(winnerCode) {
   const winnerName = winnerCode === 'P' ? match.playerName : match.opp;
   const serverName = cur.server === 'P' ? match.playerName : match.opp;
@@ -1490,6 +1722,7 @@ function logPoint(winnerCode) {
   };
   match.points.push(row);
   saveMatch();
+  updateScoreBar();
   resetPoint();
 }
 
@@ -1611,6 +1844,7 @@ function confirmDelete() {
   if (pendingDeleteIdx !== null) {
     match.points.splice(pendingDeleteIdx, 1);
     saveMatch();
+    updateScoreBar();
     pendingDeleteIdx = null;
     renderLog();
   }
@@ -1860,6 +2094,7 @@ function saveEdit() {
   lsSel.removeEventListener('change', editLastShotChange);
 
   saveMatch();
+  updateScoreBar();
   closeEdit();
   renderLog();
 }
