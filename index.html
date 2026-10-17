@@ -1,13 +1,6 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Tennis Logger</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<!-- PWA / Home screen meta -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Tennis Logger">
-<meta name="mobile-web-app-capable" content="yes">
-<link id="apple-touch-icon-link" rel="apple-touch-icon">
-<link id="favicon-link" rel="icon" type="image/png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -97,43 +90,7 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 /* ─── SETUP SCREEN ───────────────────────────────────── */
 #setup { padding: 24px 0 32px; gap: 20px; }
 .setup-logo { text-align: center; padding: 8px 16px; }
-.setup-logo-mark { display: inline-flex; align-items: center; gap: 10px; }
-.setup-logo-mark svg { width: 44px; height: 44px; flex-shrink: 0; }
-.setup-logo-mark h1 { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.03em; }
-
-/* ─── ROTATE OVERLAY ────────────────────────────────── */
-#rotate-overlay {
-  display: none; position: fixed; inset: 0; z-index: 9999;
-  background: var(--bg);
-  flex-direction: column; align-items: center; justify-content: center; gap: 28px;
-  padding: 40px 24px;
-}
-#rotate-overlay.show { display: flex; }
-.ro-logo { display: flex; align-items: center; gap: 10px; }
-.ro-logo svg.ball { width: 36px; height: 36px; }
-.ro-logo-text { font-size: 1.3rem; font-weight: 900; letter-spacing: -0.02em; color: var(--fg); }
-.ro-phone {
-  display: flex; align-items: center; gap: 20px;
-}
-.ro-phone-icon { animation: ro-spin 2.2s ease-in-out infinite; }
-.ro-phone-icon svg { width: 64px; height: 64px; }
-@keyframes ro-spin {
-  0%,30% { transform: rotate(0deg); }
-  60%,90% { transform: rotate(90deg); }
-  100%   { transform: rotate(0deg); }
-}
-.ro-arrow {
-  color: var(--accent); font-size: 28px; font-weight: 900;
-  animation: ro-arrow-pulse 2.2s ease-in-out infinite;
-}
-@keyframes ro-arrow-pulse {
-  0%,30% { opacity: .3; }
-  60%,90% { opacity: 1; }
-  100%   { opacity: .3; }
-}
-.ro-msg { font-size: 20px; font-weight: 700; color: var(--fg); text-align: center; line-height: 1.3; }
-.ro-sub { font-size: 14px; color: var(--fg2); text-align: center; }
-.ro-skip { background: transparent; color: var(--fg2); font-size: 14px; text-decoration: underline; padding: 10px 20px; }
+.setup-logo span { font-size: 2rem; }
 .setup-card {
   background: var(--bg2); border: 1px solid var(--border);
   border-radius: 16px; padding: 20px; margin: 0 0; gap: 14px;
@@ -533,18 +490,8 @@ h2 { font-size: 1.15rem; font-weight: 700; }
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="setup" class="screen active">
   <div class="setup-logo">
-    <div class="setup-logo-mark">
-      <!-- Tennis ball SVG logo -->
-      <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle cx="22" cy="22" r="20" fill="#c8e82a"/>
-        <!-- Top seam -->
-        <path d="M3 22 C6 12, 14 9, 22 14 C30 19, 38 16, 41 22" stroke="white" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-        <!-- Bottom seam -->
-        <path d="M3 22 C6 32, 14 35, 22 30 C30 25, 38 28, 41 22" stroke="white" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-      </svg>
-      <h1>Tennis Logger</h1>
-    </div>
-    <p style="color:var(--fg2);font-size:13px;margin-top:6px;">Point-by-point match logging</p>
+    <h1>🎾 Tennis Logger</h1>
+    <p style="color:var(--fg2);font-size:13px;margin-top:4px;">Point-by-point match logging</p>
   </div>
   <div class="setup-card" style="margin:0 0 0 0">
     <div class="form-row">
@@ -1268,19 +1215,9 @@ function startMatch() {
 
   buildLastShotGrids();
   resetPoint();
-
-  // If portrait, prompt rotate — then proceed
-  if (window.innerHeight > window.innerWidth) {
-    showRotateOverlay(() => {
-      goScreen('log-screen');
-      loadSavedMatch();
-      updateScoreBar();
-    });
-  } else {
-    goScreen('log-screen');
-    loadSavedMatch();
-    updateScoreBar();
-  }
+  goScreen('log-screen');
+  loadSavedMatch();
+  updateScoreBar();
 }
 
 function loadSavedMatch() {
@@ -2978,127 +2915,6 @@ function downloadStats() {
     .replace(/[^a-z0-9_\-\.]/gi,'_');
   XLSX.writeFile(wb, fname);
 }
-
-/* ─── HOME SCREEN ICON (canvas → apple-touch-icon) ──── */
-(function generateAppIcon() {
-  try {
-    const S = 180;
-    const c = document.createElement('canvas');
-    c.width = c.height = S;
-    const ctx = c.getContext('2d');
-
-    // Background matching app dark theme
-    ctx.fillStyle = '#0d0f14';
-    roundRect(ctx, 0, 0, S, S, 0); // iOS clips corners itself
-    ctx.fill();
-
-    // Tennis ball
-    ctx.beginPath();
-    ctx.arc(90, 90, 72, 0, Math.PI * 2);
-    ctx.fillStyle = '#c8e82a';
-    ctx.fill();
-
-    // Seam lines — cubic bezier matching the SVG
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 8;
-    ctx.lineCap = 'round';
-
-    // Scale from viewBox 44 → 180: factor = 180/44 ≈ 4.09, center offset = (180-44*4.09)/2 ≈ 0
-    const s = 180 / 44;
-    function sx(x) { return x * s; }
-    function sy(y) { return y * s; }
-
-    // Top seam: M3 22 C6 12, 14 9, 22 14 C30 19, 38 16, 41 22
-    ctx.beginPath();
-    ctx.moveTo(sx(3), sy(22));
-    ctx.bezierCurveTo(sx(6), sy(12), sx(14), sy(9),  sx(22), sy(14));
-    ctx.bezierCurveTo(sx(30), sy(19), sx(38), sy(16), sx(41), sy(22));
-    ctx.stroke();
-
-    // Bottom seam: M3 22 C6 32, 14 35, 22 30 C30 25, 38 28, 41 22
-    ctx.beginPath();
-    ctx.moveTo(sx(3), sy(22));
-    ctx.bezierCurveTo(sx(6), sy(32), sx(14), sy(35), sx(22), sy(30));
-    ctx.bezierCurveTo(sx(30), sy(25), sx(38), sy(28), sx(41), sy(22));
-    ctx.stroke();
-
-    const dataUrl = c.toDataURL('image/png');
-    document.getElementById('apple-touch-icon-link').href = dataUrl;
-    document.getElementById('favicon-link').href = dataUrl;
-  } catch(e) {}
-
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-  }
-})();
-
-/* ─── ROTATE OVERLAY ─────────────────────────────────── */
-let _rotateCb = null;
-function showRotateOverlay(cb) {
-  _rotateCb = cb;
-  document.getElementById('rotate-overlay').classList.add('show');
-  // Auto-dismiss when phone is rotated to landscape
-  function onResize() {
-    if (window.innerWidth > window.innerHeight) {
-      window.removeEventListener('resize', onResize);
-      dismissRotateOverlay();
-    }
-  }
-  window.addEventListener('resize', onResize);
-  window._rotateResizeFn = onResize;
-}
-function dismissRotateOverlay() {
-  document.getElementById('rotate-overlay').classList.remove('show');
-  if (window._rotateResizeFn) {
-    window.removeEventListener('resize', window._rotateResizeFn);
-    window._rotateResizeFn = null;
-  }
-  if (_rotateCb) { const cb = _rotateCb; _rotateCb = null; cb(); }
-}
 </script>
-
-<!-- ═══════════════════════════════════════════════════ -->
-<!--  ROTATE OVERLAY                                      -->
-<!-- ═══════════════════════════════════════════════════ -->
-<div id="rotate-overlay">
-  <!-- Logo -->
-  <div class="ro-logo">
-    <svg class="ball" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="22" cy="22" r="20" fill="#c8e82a"/>
-      <path d="M3 22 C6 12, 14 9, 22 14 C30 19, 38 16, 41 22" stroke="white" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-      <path d="M3 22 C6 32, 14 35, 22 30 C30 25, 38 28, 41 22" stroke="white" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-    </svg>
-    <span class="ro-logo-text">Tennis Logger</span>
-  </div>
-
-  <!-- Animated phone icon -->
-  <div class="ro-phone">
-    <div class="ro-phone-icon">
-      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <!-- Phone outline in portrait -->
-        <rect x="18" y="8" width="28" height="48" rx="6" stroke="var(--fg)" stroke-width="2.5"/>
-        <!-- Screen -->
-        <rect x="22" y="16" width="20" height="30" rx="2" fill="var(--bg3)"/>
-        <!-- Home indicator -->
-        <line x1="28" y1="59" x2="36" y2="59" stroke="var(--fg)" stroke-width="2.5" stroke-linecap="round"/>
-      </svg>
-    </div>
-    <div class="ro-arrow">↻</div>
-  </div>
-
-  <div class="ro-msg">Rotate your phone to landscape</div>
-  <div class="ro-sub">This app is designed for landscape mode</div>
-  <button class="ro-skip" onclick="dismissRotateOverlay()">Continue in portrait →</button>
-</div>
 
 </body></html>
